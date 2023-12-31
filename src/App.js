@@ -1,4 +1,5 @@
 import './App.css';
+import DraggableWindow from './Components/DraggableWindow/DraggableWindow'
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 function App() {
@@ -13,7 +14,9 @@ function App() {
         <PanelResizeHandle className="w-1 bg-black" />
         <Panel>
           <div class="min-h-screen bg-white">
-            mid
+            <DraggableWindow>
+              <div>I can now be moved around!</div>
+            </DraggableWindow>
           </div>
         </Panel>
         <PanelResizeHandle className="w-1 bg-black" />
