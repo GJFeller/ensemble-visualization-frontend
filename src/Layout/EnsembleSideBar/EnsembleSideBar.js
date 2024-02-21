@@ -2,55 +2,66 @@ import React, { Component } from 'react';
 import EventEmitter from '../../utils/EventEmitter';
 import TreeView from '../../Components/TreeView';
 
-export default class EnsembleSideBar extends Component {
+export default class EnsembleSkeyeBar extends Component {
 
   constructor(props) {
     super(props);
     this.createChart = this.createChart.bind(this);
     this.treeData = [
       {
-        id: "1",
+        key: "1",
         label: "Test-1",
+        isChecked: false,
         children: [
           {
-            id: "2",
+            key: "2",
             label: "Test-1-1",
+            isChecked: false,
             children: [
               {
-                id: "3",
-                label: "Test-1-1-1"
+                key: "3",
+                label: "Test-1-1-1",
+                isChecked: false,
               },
               {
-                id: "4",
-                label: "Test-1-1-2"
+                key: "4",
+                label: "Test-1-1-2",
+                isChecked: false,
               }
             ]
           },
           {
-            id: "5",
-            label: "Test-1-2"
+            key: "5",
+            label: "Test-1-2",
+            isChecked: false,
+            
           },
           {
-            id: "6",
-            label: "Test-1-3"
+            key: "6",
+            label: "Test-1-3",
+            isChecked: false,
           }
         ]
       },
       {
-        id: "7",
-        label: "Test-2"
+        key: "7",
+        label: "Test-2",
+        isChecked: false,
       },
       {
-        id: "8",
+        key: "8",
         label: "Test-3",
+        isChecked: false,
         children: [
           {
-            id: "9",
-            label: "Test-3-1"
+            key: "9",
+            label: "Test-3-1",
+            isChecked: false,
           },
           {
-            id: "10",
-            label: "Test-3-2"
+            key: "10",
+            label: "Test-3-2",
+            isChecked: false,
           }
         ]
       }

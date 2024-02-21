@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import TreeNode from './TreeNode';
 
 export default function TreeView(props) {
