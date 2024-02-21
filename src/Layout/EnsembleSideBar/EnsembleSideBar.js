@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import EventEmitter from '../../utils/EventEmitter';
 import TreeView from '../../Components/TreeView';
 
-export default class EnsembleSkeyeBar extends Component {
+export default class EnsembleSideBar extends Component {
 
   constructor(props) {
     super(props);
