@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import EventEmitter from '../../utils/EventEmitter';
-import DraggableWindow from '../../Components/DraggableWindow/DraggableWindow'
+import DraggableWindow from '../../Components/DraggableWindow'
 import React from 'react';
 
 export default function VisualizationMain() {
