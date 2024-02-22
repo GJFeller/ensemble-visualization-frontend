@@ -79,7 +79,7 @@ export default class EnsembleSideBar extends Component {
       return(
         <div>
             <div className='border-1 m-2 bg-gray-300 border-gray-300'>
-              <TreeView treeData={this.treeData} />
+              <TreeView treeData={this.treeData}/>
             </div>
             <button onClick={this.createChart} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
         </div>

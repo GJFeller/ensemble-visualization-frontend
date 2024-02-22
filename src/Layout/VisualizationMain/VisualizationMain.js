@@ -5,12 +5,13 @@ import React from 'react';
 
 export default function VisualizationMain() {
     const visualizationList = [];
-    visualizationList.push(<DraggableWindow />);
+    var id = 0;
+    visualizationList.push(<DraggableWindow key={"viz-"+id++} />);
     useEffect(() => {
       const oncreateChart = (eventData)=>{
         alert(eventData.chartType);
         console.log(visualizationList);
-        visualizationList.push(<DraggableWindow />);
+        visualizationList.push(<DraggableWindow key={"viz-"+id++}/>);
       }
   
       const listener = EventEmitter.addListener('createChart', oncreateChart);

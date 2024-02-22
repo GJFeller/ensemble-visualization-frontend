@@ -5,7 +5,7 @@ export default function TreeView(props) {
   return (
     <ul>
       {props.treeData.map((node) => (
-        <TreeNode node={node} key={node.key} />
+        <TreeNode key={node.key} node={node}/>
       ))}
     </ul>
   );

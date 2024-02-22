@@ -5,10 +5,10 @@ import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
 
 function App() {
   return (
-    <div className="App" class="bg-slate-400">
+    <div className="bg-slate-400">
       <PanelGroup autoSaveId="example" direction="horizontal">
         <Panel minSize={20} maxSize={20}>
-          <div class="min-h-screen bg-slate-400">
+          <div className="min-h-screen bg-slate-400">
             <EnsembleSideBar></EnsembleSideBar>
           </div>
         </Panel>
@@ -18,7 +18,7 @@ function App() {
         </Panel>
         <PanelResizeHandle className="w-1 bg-black" />
         <Panel minSize={20} maxSize={20}>
-          <div class="min-h-screen bg-slate-400">
+          <div className="min-h-screen bg-slate-400">
             right
           </div>
         </Panel>
