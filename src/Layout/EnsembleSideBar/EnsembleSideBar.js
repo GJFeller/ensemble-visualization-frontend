@@ -69,10 +69,8 @@ export default class EnsembleSideBar extends Component {
   }
 
   createChart() {
-    alert("Button clicked!");
-    EventEmitter.emit("createChart", {
-      chartType: "Test emitter"
-    });
+    console.log("EnsembleSideBar.createChart()");
+    this.props.onCreateChart();
   }
 
   render() {
