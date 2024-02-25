@@ -21,7 +21,7 @@ export default function CollapsableArrow({
     else
       setAngle(0)
     arrowRef.setAttribute("transform", 'rotate('+angle+'deg)');
-  }, [showChildren])
+  }, [angle, showChildren])
 
   return (
     hasChildren ? 
