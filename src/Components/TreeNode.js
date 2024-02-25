@@ -37,11 +37,11 @@ export default function TreeNode(props) {
   return (
     <>
       <div className="flex flex-row mb-2">
-        {props.node.children !== undefined ?
-        <CollapsableArrow onClick={handleClick}/> :
-        <svg width="15pt" height="15pt" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        </svg>
-        }
+        <CollapsableArrow 
+          onClick={handleClick} 
+          hasChildren={props.node.children !== undefined} 
+          showChildren={showChildren}
+        />
         <input type="checkbox" 
           id={props.node.key} 
           name={label} 
