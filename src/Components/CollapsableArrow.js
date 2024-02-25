@@ -1,0 +1,8 @@
+
+export default function CollapsableArrow() {
+    return (
+      <svg width="15pt" height="15pt" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path transform="scale(4.1667)" d="m21 8.5003-9 9-9-9" fill="none" stroke="#000" stroke-miterlimit="10" stroke-width="2"/>
+      </svg> 
+    )
+}

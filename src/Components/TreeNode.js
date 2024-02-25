@@ -1,42 +1,62 @@
 import React, { useState } from 'react';
+import CollapsableArrow from './CollapsableArrow';
 
 export default function TreeNode(props) {
-    const { label } = props.node;
 
-    const [showChildren, setShowChildren] = useState(false);
+  const { label } = props.node;
 
-    const handleClick = () => {
-        setShowChildren(!showChildren);
-    };
+  const [isChecked, setIsChecked] = useState(props.node.isChecked);
+  const [showChildren, setShowChildren] = useState(false);
 
-    // TODO: Fazer um evento que rode nos TreeNode filhos para mudar o estado de suas variáveis
-    const checkChildrenRecursive = (children, isChecked) => {
-      if(isChecked !== undefined) {
-        children?.map((node) => (
-          node.isChecked = isChecked,
-          checkChildrenRecursive(node.children, isChecked)
-        ));
-      }
-      console.log(children);
+  const handleClick = (e) => {
+      setShowChildren(!showChildren);
+  };
+
+  /**
+   * Change the check state for all children of the node
+   * @param {array} children 
+   * @param {boolean} isChecked 
+   */
+  const checkChildrenRecursive = (children, isChecked) => {
+    if(isChecked !== undefined) {
+      children?.map((node) => (
+        // eslint-disable-next-line no-sequences
+        node.isChecked = isChecked,
+        checkChildrenRecursive(node.children, isChecked)
+      ));
     }
+    console.log(children);
+  }
 
-    const handleOnChange = () => {
-      checkChildrenRecursive(props.node.children, !props.node.isChecked);
-      props.node.isChecked = !props.node.isChecked;
-    }
+  const handleOnChange = () => {
+    checkChildrenRecursive(props.node.children, !props.node.isChecked);
+    props.node.isChecked = !props.node.isChecked;
+    setIsChecked(!isChecked);
+  }
 
-    return (
-      <>
-        <div onClick={handleClick} style={{ marginBottom: "10px" }}>
-          <input type="checkbox" id={props.node.key} name={label} value={props.node.key} checked={props.node.isChecked} onChange={handleOnChange}/>
-          <span>{label}</span>
-        </div>
-        <ul style={{ paddingLeft: "10px", borderLeft: "1px solid black" }}>
-          {showChildren && 
-          props.node.children !== undefined && props.node.children.map((node) => (
-            <TreeNode key={node.key} node={node}/>
-          ))}
-        </ul>
-      </>
-    );
+  return (
+    <>
+      <div className="flex flex-row mb-2">
+        {props.node.children !== undefined ?
+        <CollapsableArrow onClick={handleClick}/> :
+        <svg width="15pt" height="15pt" version="1.1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+        }
+        <input type="checkbox" 
+          id={props.node.key} 
+          name={label} 
+          value={props.node.key} 
+          checked={props.node.isChecked} 
+          onChange={handleOnChange}
+        />
+        <button onClick={handleClick}>{label}</button>
+      </div>
+      <ul className="pl-2">
+        {showChildren && 
+        props.node.children !== undefined && props.node.children.map((node) => (
+          <TreeNode key={node.key} node={node}/>
+        ))}
+      </ul>
+    </>
+  );
 }
