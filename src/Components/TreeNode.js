@@ -39,8 +39,8 @@ export default function TreeNode(props) {
       <div className="flex flex-row mb-2">
         <CollapsableArrow 
           onClick={handleClick} 
-          hasChildren={props.node.children !== undefined} 
-          showChildren={showChildren}
+          hasContent={props.node.children !== undefined} 
+          isOpen={showChildren}
           width={20}
           height={20}
         />
