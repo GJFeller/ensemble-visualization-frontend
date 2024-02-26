@@ -41,6 +41,8 @@ export default function TreeNode(props) {
           onClick={handleClick} 
           hasChildren={props.node.children !== undefined} 
           showChildren={showChildren}
+          width={20}
+          height={20}
         />
         <input type="checkbox" 
           id={props.node.key} 

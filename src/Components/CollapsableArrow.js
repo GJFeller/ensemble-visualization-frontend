@@ -4,7 +4,9 @@ import emptyArrow from '../Images/expand-arrow-empty.svg'
 
 export default function CollapsableArrow({
   hasChildren,
-  showChildren
+  showChildren,
+  width,
+  height
 }) {
 
   const [angle, setAngle] = useState(0);
@@ -20,12 +22,12 @@ export default function CollapsableArrow({
       setAngle(180);
     else
       setAngle(0)
-    arrowRef.setAttribute("transform", 'rotate('+angle+'deg)');
+    arrowRef.style.transform = 'rotate('+angle+'deg)';
   }, [angle, showChildren])
 
   return (
     hasChildren ? 
-    <img ref={svg} src={arrow} style={showChildren ? {transform: 'rotate(180deg)'} : {}} alt="collapsable"/> :
-    <img ref={svg} src={emptyArrow} alt="empty"/>
+    <img ref={svg} src={arrow} width={width} height={height} style={showChildren ? {transform: 'rotate(180deg)', transition: '0.5s, transform 0.5s'} : {transform: 'rotate(0deg)', transition: '0.5s, transform 0.5s'}} alt="collapsable"/> :
+    <img ref={svg} src={emptyArrow} width={width} height={height} alt="empty"/>
   )
 }
