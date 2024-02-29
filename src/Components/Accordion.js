@@ -16,17 +16,21 @@ export default function Accordion({
   children}) {
 
   return (
-   <div className='container'>
+   <div className='container mx-auto bg-gray-300 border-gray-300'>
      <div className='wrapper'>
-         <button>
-            <p>{title}</p>
-            <CollapsableArrow
-              hasContent={false} 
-              isOpen={false}
-              width={20}
-              height={20}
-            />
-         </button>
+        <button className='flex'>
+            <div className='flex-1'>
+              <p>{title}</p>
+            </div>
+            <div className='flex-none'>
+              <CollapsableArrow
+                hasContent={false} 
+                isOpen={false}
+                width={20}
+                height={20}
+              />
+            </div>
+        </button>
          <div>
             {children}
          </div>

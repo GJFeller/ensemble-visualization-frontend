@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import EventEmitter from '../../utils/EventEmitter';
 import TreeView from '../../Components/TreeView';
+import Accordion from '../../Components/Accordion';
 
 export default class EnsembleSideBar extends Component {
 
@@ -75,12 +75,15 @@ export default class EnsembleSideBar extends Component {
 
   render() {
       return(
-        <div>
+        <>
+            <Accordion title="Filter Options">
+              <p>My content</p>
+            </Accordion>
             <div className='border-1 m-2 bg-gray-300 border-gray-300'>
               <TreeView treeData={this.treeData}/>
             </div>
             <button onClick={this.createChart} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
-        </div>
+        </>
       )
   }
 }
