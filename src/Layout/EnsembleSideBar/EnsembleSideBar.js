@@ -76,10 +76,12 @@ export default class EnsembleSideBar extends Component {
   render() {
       return(
         <>
+            <div className='border-1 rounded-md m-1'>
             <Accordion title="Filter Options">
               <p>My content</p>
             </Accordion>
-            <div className='border-1 m-2 bg-gray-300 border-gray-300'>
+            </div>
+            <div className='border-1 rounded-md m-1 bg-gray-200 border-gray-200'>
               <TreeView treeData={this.treeData}/>
             </div>
             <button onClick={this.createChart} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>

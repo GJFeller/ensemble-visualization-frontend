@@ -1,5 +1,6 @@
 import './App.css';
 import EnsembleSideBar from './Layout/EnsembleSideBar/EnsembleSideBar';
+import ChartSideBar from './Layout/ChartSideBar';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
 import DraggableWindow from './Components/DraggableWindow'
@@ -42,7 +43,8 @@ function App() {
         <PanelResizeHandle className="w-1 bg-black" />
         <Panel minSize={20} maxSize={20}>
           <div className="min-h-screen bg-slate-400">
-            right
+            <ChartSideBar>
+            </ChartSideBar>
           </div>
         </Panel>
       </PanelGroup>

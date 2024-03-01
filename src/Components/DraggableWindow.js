@@ -1,84 +1,152 @@
-import React, { Component } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3'
 
 import Draggable from 'react-draggable';
 
 let plotId = 0;
 
-export type DraggableWindowProps = { 
-  windowTitle?: string
- };
+export default function DraggableWindow({
+  title = "Header Title"
+}) {
 
-export default class DraggableWindow extends Component<DraggableWindowProps> {
-  constructor(props) {
-        super(props);
-        this.panelPlotId = "plot"+plotId++;
-        this.state = {
-			    dimensions: null
-		    };
+  const container = useRef(null);
+  const chartId = "plot"+plotId++;
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    console.log(chartId);
+    const drawChart = () => {
+      const data = [12, 5, 6, 6, 9, 10];
+      const width = container.current.offsetWidth;
+      const barSize = width/data.length - 5*(data.length-1);
+
+          const svg = d3.select("#"+chartId)
+                      .attr("width", width)
+                      .attr("height", 300);
+
+          svg.selectAll("rect")
+              .data(data)
+              .enter()
+              .append("rect")
+              .attr("x", (d, i) => i * (barSize + 10))
+              .attr("y", (d, i) => 300 - 10 * d)
+              .attr("width", barSize)
+              .attr("height", (d, i) => d * 10)
+              .attr("fill", "green");
     }
+    drawChart(container, chartId);
+    console.log(container);
+  }, []);
 
-  componentDidMount() {
-    this.setState({
-			dimensions: {
-				width: this.container.offsetWidth,
-				height: this.container.offsetHeight,
-			}
-		});
-    this.drawChart();
-  }
-
-  drawChart() {
-    const data = [12, 5, 6, 6, 9, 10];
-    console.log(this.container.offsetWidth);
-    const width = this.container.offsetWidth;
-    const barSize = width/data.length - 5*(data.length-1);
-
-        const svg = d3.select("#"+this.panelPlotId)
-                    .attr("width", width)
-                    .attr("height", 300);
-
-        svg.selectAll("rect")
-            .data(data)
-            .enter()
-            .append("rect")
-            .attr("x", (d, i) => i * (barSize + 10))
-            .attr("y", (d, i) => 300 - 10 * d)
-            .attr("width", barSize)
-            .attr("height", (d, i) => d * 10)
-            .attr("fill", "green");
-  }
-  
-  render() {
-      const { windowTitle = "Header Title" } = this.props;
-      return(
-        <Draggable
-          handle='.handle' 
-          defaultPosition={{x: 0, y: 0}}
-          position={null}
-          scale={1}
-          onStart={this.handleStart}
-          onDrag={this.handleDrag}
-          onStop={this.handleStop}>
-          <div>
-          <div className="min-w-48 min-h-48 w-64 max-w-full border-2 overflow-auto resize">
-            <div className='handle'>
-              <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
-                <div>
-                  
-                </div>
-                <div className="content-center">
-                  <h2 className="text-center">{windowTitle}</h2>
-                </div>
-                <div className="">
-                  
-                </div>
-              </div>
+  return (
+    <Draggable
+      handle='.handle' 
+      defaultPosition={{x: 0, y: 0}}
+      position={null}
+      scale={1}  
+    >
+      <div>
+      <div className="min-w-48 min-h-48 w-64 max-w-full border-2 overflow-auto resize">
+        <div className='handle'>
+          <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
+            <div>
+              
             </div>
-            <div id="window-body" ref={e => (this.container = e)}><svg id={this.panelPlotId}></svg></div>
+            <div className="content-center">
+              <h2 className="text-center">{title}</h2>
+            </div>
+            <div className="">
+              
+            </div>
           </div>
-          </div>
-        </Draggable>
-      )
-  }
+        </div>
+        <div 
+          id="window-body" 
+          className='container' 
+          ref={container}
+        >
+          <svg id={chartId}></svg>
+        </div>
+      </div>
+      </div>
+    </Draggable>
+  );
 }
+
+//export type DraggableWindowProps = { 
+//  windowTitle?: string
+// };
+//
+//export default class DraggableWindow extends Component<DraggableWindowProps> {
+//  constructor(props) {
+//        super(props);
+//        this.chartId = "plot"+plotId++;
+//        this.state = {
+//			    dimensions: null
+//		    };
+//    }
+//
+//  componentDidMount() {
+//    this.setState({
+//			dimensions: {
+//				width: this.container.offsetWidth,
+//				height: this.container.offsetHeight,
+//			}
+//		});
+//    this.drawChart();
+//  }
+//
+//  drawChart() {
+//    const data = [12, 5, 6, 6, 9, 10];
+//    console.log(this.container.offsetWidth);
+//    const width = this.container.offsetWidth;
+//    const barSize = width/data.length - 5*(data.length-1);
+//
+//        const svg = d3.select("#"+this.chartId)
+//                    .attr("width", width)
+//                    .attr("height", 300);
+//
+//        svg.selectAll("rect")
+//            .data(data)
+//            .enter()
+//            .append("rect")
+//            .attr("x", (d, i) => i * (barSize + 10))
+//            .attr("y", (d, i) => 300 - 10 * d)
+//            .attr("width", barSize)
+//            .attr("height", (d, i) => d * 10)
+//            .attr("fill", "green");
+//  }
+//  
+//  render() {
+//      const { windowTitle = "Header Title" } = this.props;
+//      return(
+//        <Draggable
+//          handle='.handle' 
+//          defaultPosition={{x: 0, y: 0}}
+//          position={null}
+//          scale={1}
+//          onStart={this.handleStart}
+//          onDrag={this.handleDrag}
+//          onStop={this.handleStop}>
+//          <div>
+//          <div className="min-w-48 min-h-48 w-64 max-w-full border-2 overflow-auto resize">
+//            <div className='handle'>
+//              <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
+//                <div>
+//                  
+//                </div>
+//                <div className="content-center">
+//                  <h2 className="text-center">{windowTitle}</h2>
+//                </div>
+//                <div className="">
+//                  
+//                </div>
+//              </div>
+//            </div>
+//            <div id="window-body" ref={e => (this.container = e)}><svg id={this.chartId}></svg></div>
+//          </div>
+//          </div>
+//        </Draggable>
+//      )
+//  }
+//}
