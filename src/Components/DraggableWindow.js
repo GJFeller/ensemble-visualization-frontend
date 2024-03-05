@@ -10,32 +10,45 @@ export default function DraggableWindow({
 }) {
 
   const container = useRef(null);
+  const resizible = useRef(null);
   const chartId = "plot"+plotId++;
   const [width, setWidth] = useState(0);
 
   useEffect(() => {
     console.log(chartId);
     const drawChart = () => {
+      
       const data = [12, 5, 6, 6, 9, 10];
       const width = container.current.offsetWidth;
+      const height = container.current.offsetHeight;
       const barSize = width/data.length - 5*(data.length-1);
+      console.log(width);
+      console.log(barSize);
 
           const svg = d3.select("#"+chartId)
                       .attr("width", width)
-                      .attr("height", 300);
+                      .attr("height", height);
 
           svg.selectAll("rect")
               .data(data)
               .enter()
               .append("rect")
               .attr("x", (d, i) => i * (barSize + 10))
-              .attr("y", (d, i) => 300 - 10 * d)
+              .attr("y", (d, i) => height - 10 * d)
               .attr("width", barSize)
               .attr("height", (d, i) => d * 10)
               .attr("fill", "green");
     }
     drawChart(container, chartId);
-    console.log(container);
+
+    const resizableDiv = resizible.current;
+    resizableDiv.addEventListener("mousedown", drawChart);
+    resizableDiv.addEventListener("mouseup", drawChart);
+    return () => {
+      resizableDiv.removeEventListener("mousedown", drawChart);
+      resizableDiv.removeEventListener("mouseup", drawChart);
+    };
+
   }, []);
 
   return (
@@ -43,10 +56,9 @@ export default function DraggableWindow({
       handle='.handle' 
       defaultPosition={{x: 0, y: 0}}
       position={null}
-      scale={1}  
+      scale={1}
     >
-      <div>
-      <div className="min-w-48 min-h-48 w-64 max-w-full border-2 overflow-auto resize">
+      <div ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
         <div className='handle'>
           <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
             <div>
@@ -62,12 +74,11 @@ export default function DraggableWindow({
         </div>
         <div 
           id="window-body" 
-          className='container' 
+          className='flex items-center flex-auto' 
           ref={container}
         >
           <svg id={chartId}></svg>
         </div>
-      </div>
       </div>
     </Draggable>
   );

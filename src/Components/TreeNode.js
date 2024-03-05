@@ -37,13 +37,15 @@ export default function TreeNode(props) {
   return (
     <>
       <div className="flex flex-row mb-2">
-        <CollapsableArrow 
-          onClick={handleClick} 
-          hasContent={props.node.children !== undefined} 
-          isOpen={showChildren}
-          width={20}
-          height={20}
-        />
+        <button onClick={handleClick}>
+          <CollapsableArrow 
+            onClick={handleClick} 
+            hasContent={props.node.children !== undefined} 
+            isOpen={showChildren}
+            width={20}
+            height={20}
+          />
+        </button>
         <input type="checkbox" 
           id={props.node.key} 
           name={label} 
