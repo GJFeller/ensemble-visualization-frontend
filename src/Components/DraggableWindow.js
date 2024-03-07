@@ -74,7 +74,7 @@ export default function DraggableWindow({
         </div>
         <div 
           id="window-body" 
-          className='flex items-center flex-auto' 
+          className='flex items-center flex-auto max-w-full max-h-full overflow-auto' 
           ref={container}
         >
           <svg id={chartId}></svg>
