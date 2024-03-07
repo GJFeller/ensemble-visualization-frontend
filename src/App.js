@@ -3,8 +3,9 @@ import EnsembleSideBar from './Layout/EnsembleSideBar/EnsembleSideBar';
 import ChartSideBar from './Layout/ChartSideBar';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
-import DraggableWindow from './Components/DraggableWindow'
+import DraggableWindow from './Components/DraggableWindow';
 import { useState } from 'react';
+import * as drawCharts from './utils/ChartFunctions';
 
 
 let vizId = 0;
@@ -17,7 +18,7 @@ function App() {
     setVisualizationList(
       [
         ...visualizationList,
-        <DraggableWindow key={"viz-"+vizId++} />
+        <DraggableWindow key={"viz-"+vizId++} drawChartFunction={drawCharts.drawBarChart}/>
       ]
     )
   };

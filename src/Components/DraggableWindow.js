@@ -1,62 +1,34 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as d3 from 'd3'
+import React, { useEffect, useRef } from 'react';
 
 import Draggable from 'react-draggable';
 
 let plotId = 0;
 
 export default function DraggableWindow({
-  title = "Header Title"
+  title = "Header Title",
+  drawChartFunction = () => {}
 }) {
 
   const container = useRef(null);
   const resizible = useRef(null);
   const chartId = "plot"+plotId++;
-  const [width, setWidth] = useState(0);
 
   useEffect(() => {
     console.log(chartId);
-    const drawChart = () => {
-      
-      const data = [12, 5, 6, 6, 9, 10];
-      const width = container.current.offsetWidth;
-      const height = container.current.offsetHeight;
-      const barSize = width/data.length - 5*(data.length-1);
-      console.log("width: " + width);
-      console.log("height: " + height);
-      console.log("barSize: " + barSize);
-
-          const svg = d3.select("#"+chartId)
-                      .attr("width", width)
-                      .attr("height", height);
-
-          var bars = svg.selectAll("rect")
-          .remove()
-          .exit()
-          .data(data);
-
-          
-          bars.enter()
-              .append("rect")
-              .attr("x", (d, i) => i * (barSize + 10))
-              .attr("y", (d, i) => height - 10 * d)
-              .attr("width", barSize)
-              .attr("height", (d, i) => d * 10)
-              .attr("fill", "green");
-          
-              console.log(svg.selectAll("rect"));
+    const handleRedrawEvent = (e) => {
+      drawChartFunction(chartId);
     }
-    drawChart(container, chartId);
+    drawChartFunction(chartId);
 
     const resizableDiv = resizible.current;
-    resizableDiv.addEventListener("mousedown", drawChart);
-    resizableDiv.addEventListener("mouseup", drawChart);
+    resizableDiv.addEventListener("mousedown", handleRedrawEvent);
+    resizableDiv.addEventListener("mouseup", handleRedrawEvent);
     return () => {
-      resizableDiv.removeEventListener("mousedown", drawChart);
-      resizableDiv.removeEventListener("mouseup", drawChart);
+      resizableDiv.removeEventListener("mousedown", handleRedrawEvent);
+      resizableDiv.removeEventListener("mouseup", handleRedrawEvent);
     };
 
-  }, []);
+  }, [drawChartFunction]);
 
   return (
     <Draggable
