@@ -22,22 +22,29 @@ export default function DraggableWindow({
       const width = container.current.offsetWidth;
       const height = container.current.offsetHeight;
       const barSize = width/data.length - 5*(data.length-1);
-      console.log(width);
-      console.log(barSize);
+      console.log("width: " + width);
+      console.log("height: " + height);
+      console.log("barSize: " + barSize);
 
           const svg = d3.select("#"+chartId)
                       .attr("width", width)
                       .attr("height", height);
 
-          svg.selectAll("rect")
-              .data(data)
-              .enter()
+          var bars = svg.selectAll("rect")
+          .remove()
+          .exit()
+          .data(data);
+
+          
+          bars.enter()
               .append("rect")
               .attr("x", (d, i) => i * (barSize + 10))
               .attr("y", (d, i) => height - 10 * d)
               .attr("width", barSize)
               .attr("height", (d, i) => d * 10)
               .attr("fill", "green");
+          
+              console.log(svg.selectAll("rect"));
     }
     drawChart(container, chartId);
 
