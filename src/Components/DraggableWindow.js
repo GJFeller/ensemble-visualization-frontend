@@ -6,6 +6,7 @@ let plotId = 0;
 
 export default function DraggableWindow({
   title = "Header Title",
+  restRoute = "/",
   drawChartFunction = () => {}
 }) {
 
@@ -14,21 +15,30 @@ export default function DraggableWindow({
   const chartId = "plot"+plotId++;
 
   useEffect(() => {
-    console.log(chartId);
-    const handleRedrawEvent = (e) => {
+    console.log(process.env.REACT_APP_BACKEND_URL+restRoute);
+    fetch(process.env.REACT_APP_BACKEND_URL+restRoute)
+    .then((res) => {
+      console.log(res);
+      return res.json();
+    })
+    .then((data) => {
+      console.log(data);
+      const handleRedrawEvent = (e) => {
+        drawChartFunction(chartId);
+      }
       drawChartFunction(chartId);
-    }
-    drawChartFunction(chartId);
 
-    const resizableDiv = resizible.current;
-    resizableDiv.addEventListener("mousedown", handleRedrawEvent);
-    resizableDiv.addEventListener("mouseup", handleRedrawEvent);
-    return () => {
-      resizableDiv.removeEventListener("mousedown", handleRedrawEvent);
-      resizableDiv.removeEventListener("mouseup", handleRedrawEvent);
-    };
+      const resizableDiv = resizible.current;
+      resizableDiv.addEventListener("mousedown", handleRedrawEvent);
+      resizableDiv.addEventListener("mouseup", handleRedrawEvent);
+      return () => {
+        resizableDiv.removeEventListener("mousedown", handleRedrawEvent);
+        resizableDiv.removeEventListener("mouseup", handleRedrawEvent);
+      };
+    });
+    console.log(chartId);
 
-  }, [drawChartFunction]);
+  }, [restRoute, drawChartFunction]);
 
   return (
     <Draggable

@@ -18,7 +18,7 @@ function App() {
     setVisualizationList(
       [
         ...visualizationList,
-        <DraggableWindow key={"viz-"+vizId++} drawChartFunction={drawCharts.drawBarChart}/>
+        <DraggableWindow key={"viz-"+vizId++} restRoute={"/dr-methods"} drawChartFunction={drawCharts.drawBarChart}/>
       ]
     )
   };
