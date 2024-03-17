@@ -12,10 +12,7 @@ export function drawScatterPlot(chartId, data) {
 
     var xMax = -Number.MIN_VALUE, yMax = -Number.MIN_VALUE;
     var xMin = Number.MAX_VALUE, yMin = Number.MAX_VALUE;
-    console.log("xMin = " + xMin + " e xMax = " + xMax);
-    console.log("yMin = " + yMin + " e yMax = " + yMax);
     for(var item in data) {
-        groups.push(item);
         data[item].forEach((point) => {
             console.log(point);
             xMax = Math.max(xMax, point[0]);
@@ -24,7 +21,6 @@ export function drawScatterPlot(chartId, data) {
             yMin = Math.min(yMin, point[1]);
         });
     };
-    console.log(groups);
 
     // Setting dimensions and margin for the plot
     d3.select("#"+chartId).selectAll("g").remove();
@@ -38,7 +34,6 @@ export function drawScatterPlot(chartId, data) {
     const x = d3.scaleLinear()
                 .domain([xMin, xMax])
                 .range([0, plotWidth]);
-    console.log("xMin = " + xMin + " e xMax = " + xMax);
     svg.selectAll(chartId+"-scatterXAxis")
        .remove();
     svg.append("g")
@@ -51,7 +46,6 @@ export function drawScatterPlot(chartId, data) {
     const y = d3.scaleLinear()
                 .domain([yMin, yMax])
                 .range([ plotHeight, 0]);
-    console.log("yMin = " + yMin + " e yMax = " + yMax);
     svg.selectAll(chartId+"-scatterYAxis")
        .remove();
     svg.append("g")
@@ -75,8 +69,8 @@ export function drawScatterPlot(chartId, data) {
         .data(data[element])
         .enter()
         .append("circle")
-          .attr("cx", function (d) {  return x(d[0]); } )
-          .attr("cy", function (d) {  return y(d[1]); } )
+          .attr("cx", function (d) { return x(d[0]); } )
+          .attr("cy", function (d) { return y(d[1]); } )
           .attr("r", pointRadius)
           .style("fill", color(element));
     });
