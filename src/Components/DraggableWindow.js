@@ -24,9 +24,9 @@ export default function DraggableWindow({
     .then((data) => {
       console.log(data);
       const handleRedrawEvent = (e) => {
-        drawChartFunction(chartId);
+        drawChartFunction(chartId, data);
       }
-      drawChartFunction(chartId);
+      drawChartFunction(chartId, data);
 
       const resizableDiv = resizible.current;
       resizableDiv.addEventListener("mousedown", handleRedrawEvent);
