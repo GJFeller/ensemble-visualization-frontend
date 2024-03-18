@@ -13,8 +13,9 @@ export function drawScatterPlot(chartId, data) {
     var xMax = -Number.MIN_VALUE, yMax = -Number.MIN_VALUE;
     var xMin = Number.MAX_VALUE, yMin = Number.MAX_VALUE;
     for(var item in data) {
+        groups.push(item);
         data[item].forEach((point) => {
-            console.log(point);
+            //console.log(point);
             xMax = Math.max(xMax, point[0]);
             xMin = Math.min(xMin, point[0]);
             yMax = Math.max(yMax, point[1]);
@@ -50,7 +51,8 @@ export function drawScatterPlot(chartId, data) {
        .remove();
     svg.append("g")
        .attr("class", chartId+"-scatterYAxis")
-       .call(d3.axisLeft(y));
+       .call(d3.axisLeft(y))
+       .attr("opacity", "0");
     
     // Color scale: give me a specie name, I return a color
     var color = d3.scaleOrdinal()
@@ -64,6 +66,7 @@ export function drawScatterPlot(chartId, data) {
     
     // Add dots
     groups.forEach((element) => {
+      // Adding points
       svg.append('g')
         .selectAll("dot")
         .data(data[element])
@@ -73,6 +76,15 @@ export function drawScatterPlot(chartId, data) {
           .attr("cy", function (d) { return y(d[1]); } )
           .attr("r", pointRadius)
           .style("fill", color(element));
+      // Creating the convex hull for each group
+      var pxPoint = data[element].map((d) => [x(d[0]), y(d[1])]);
+      var hull = d3.polygonHull(pxPoint);
+      svg.append('g')
+         .append('path')
+         .style("stroke", color(element))
+         .style("fill-opacity", "0.3")
+         .style("fill", color(element))
+         .attr("d", `M${hull.join("L")}Z`);
     });
 
 }

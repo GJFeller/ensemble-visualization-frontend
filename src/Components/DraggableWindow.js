@@ -15,10 +15,8 @@ export default function DraggableWindow({
   const chartId = "plot"+plotId++;
 
   useEffect(() => {
-    console.log(process.env.REACT_APP_BACKEND_URL+restRoute);
     fetch(process.env.REACT_APP_BACKEND_URL+restRoute)
     .then((res) => {
-      console.log(res);
       return res.json();
     })
     .then((data) => {
@@ -36,8 +34,6 @@ export default function DraggableWindow({
         resizableDiv.removeEventListener("mouseup", handleRedrawEvent);
       };
     });
-    console.log(chartId);
-
   }, [restRoute, drawChartFunction]);
 
   return (
