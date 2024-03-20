@@ -12,6 +12,7 @@ export default function DraggableWindow({
 
   const container = useRef(null);
   const resizible = useRef(null);
+  const windowBodyId = "window-body"+plotId;
   const chartId = "plot"+plotId++;
 
   useEffect(() => {
@@ -21,17 +22,16 @@ export default function DraggableWindow({
     })
     .then((data) => {
       console.log(data);
-      const handleRedrawEvent = (e) => {
-        drawChartFunction(chartId, data);
-      }
       drawChartFunction(chartId, data);
 
-      const resizableDiv = resizible.current;
-      resizableDiv.addEventListener("mousedown", handleRedrawEvent);
-      resizableDiv.addEventListener("mouseup", handleRedrawEvent);
+      // Create a new ResizeObserver instance
+      const resizeObserver = new ResizeObserver(entries => {
+        drawChartFunction(chartId, data);
+      });
+
+      resizeObserver.observe(resizible.current);
       return () => {
-        resizableDiv.removeEventListener("mousedown", handleRedrawEvent);
-        resizableDiv.removeEventListener("mouseup", handleRedrawEvent);
+        resizeObserver.disconnect();
       };
     });
   }, [restRoute, drawChartFunction]);
@@ -58,7 +58,7 @@ export default function DraggableWindow({
           </div>
         </div>
         <div 
-          id="window-body" 
+          id={windowBodyId}
           className='flex items-center flex-auto max-w-full max-h-full overflow-auto' 
           ref={container}
         >
