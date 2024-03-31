@@ -14,22 +14,41 @@ export function drawTimeChart(chartId, data) {
     const legendMargin = {top: 10, right: 5, bottom: 10, left: 10}
     const plotWidth = container.offsetWidth - margin.left - margin.right;
     const plotHeight = container.offsetHeight - margin.top - margin.bottom;
-    var groups = []
-    var xMax = -Number.MIN_VALUE, yMax = -Number.MIN_VALUE;
+    var groups = [];
+    var xMax = -Number.MAX_VALUE, yMax = -Number.MAX_VALUE;
     var xMin = Number.MAX_VALUE, yMin = Number.MAX_VALUE;
+    var groupsAreaTemp = {}, groupsArea = {};
 
     for(var item in data) {
         groups.push(item);
+        groupsAreaTemp = {};
+        groupsArea[item] = [];
         //console.log(data[item]);
         for(const [key, points] of Object.entries(data[item])) {
+            // eslint-disable-next-line no-loop-func
             points.forEach((point) => {
               xMax = Math.max(xMax, point[0]);
               xMin = Math.min(xMin, point[0]);
               yMax = Math.max(yMax, point[1]);
               yMin = Math.min(yMin, point[1]);
+              if(groupsAreaTemp[point[0]] === undefined) {
+                 groupsAreaTemp[point[0]] = {};
+                 groupsAreaTemp[point[0]].yMin = Number.MAX_VALUE;
+                 groupsAreaTemp[point[0]].yMax = -Number.MAX_VALUE;
+              }
+              groupsAreaTemp[point[0]].yMin = Math.min(groupsAreaTemp[point[0]].yMin, point[1]);
+              groupsAreaTemp[point[0]].yMax = Math.max(groupsAreaTemp[point[0]].yMax, point[1]);
             });
         }
+        for(const [key, areaRange] of Object.entries(groupsAreaTemp)) {
+            var areaPoint = {};
+            areaPoint.x = key;
+            areaPoint.yMin = areaRange.yMin;
+            areaPoint.yMax = areaRange.yMax;
+            groupsArea[item].push(areaPoint);
+        }
     };
+    //console.log(groupsArea);
     
     // Setting dimensions and margin for the plot
     d3.select("#"+chartId).selectAll("g").remove();
@@ -77,16 +96,28 @@ export function drawTimeChart(chartId, data) {
    groups.forEach((ensemble) => {
       for(const [simulation, points] of Object.entries(data[ensemble])) {
          svg
-           .append("path")
-           .datum(data[ensemble][simulation])
-           .attr("fill", "none")
-           .style("stroke", color(ensemble))
-           .attr("stroke-width", 1.5)
-           .attr("d", d3.line()
-             .x(function(d) { console.log(d); return x(d[0]) })
+            .append("path")
+            .datum(data[ensemble][simulation])
+            .attr("fill", "none")
+            .style("stroke", color(ensemble))
+            .attr("stroke-width", 1.5)
+            .attr("d", d3.line()
+             .x(function(d) { return x(d[0]) })
              .y(function(d) { return y(d[1]) })
-             )
+            );
       }
+      svg
+         .append("path")
+         .datum(groupsArea[ensemble])
+         .attr("fill", color(ensemble))
+         .attr("stroke", color(ensemble))
+         .attr("opacity", 0.2)
+         .attr("d", d3.area()
+           .x(function(d) { return x(d.x); })
+           .y0(function(d) { return y(d.yMin); })
+           .y1(function(d) { return y(d.yMax); })
+         );
+
    });
 
    var legendContainer = svg.append("g")
