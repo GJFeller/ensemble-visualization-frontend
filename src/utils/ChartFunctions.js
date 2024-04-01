@@ -160,16 +160,27 @@ export function drawScatterPlot(chartId, data) {
     const pointRadius = 2;
     var groups = []
 
+    // FIXME: For some reason, the backend is returning each simulation as a string instead of a object.
+    // Here we are going to convert this string into a JSON object
+    var convertedData = {}
+    for(var ensemble in data) {
+      convertedData[ensemble] = []
+      // eslint-disable-next-line no-loop-func
+      data[ensemble].forEach((simulation) => {
+         convertedData[ensemble].push(JSON.parse(simulation));
+      });
+    }
     var xMax = -Number.MIN_VALUE, yMax = -Number.MIN_VALUE;
     var xMin = Number.MAX_VALUE, yMin = Number.MAX_VALUE;
-    for(var item in data) {
+    for(var item in convertedData) {
         groups.push(item);
-        data[item].forEach((point) => {
+        // eslint-disable-next-line no-loop-func
+        convertedData[item].forEach((simulation) => {
             //console.log(point);
-            xMax = Math.max(xMax, point[0]);
-            xMin = Math.min(xMin, point[0]);
-            yMax = Math.max(yMax, point[1]);
-            yMin = Math.min(yMin, point[1]);
+            xMax = Math.max(xMax, simulation.x);
+            xMin = Math.min(xMin, simulation.x);
+            yMax = Math.max(yMax, simulation.y);
+            yMin = Math.min(yMin, simulation.y);
         });
     };
 
@@ -207,7 +218,7 @@ export function drawScatterPlot(chartId, data) {
     // Color scale: give me a specie name, I return a color
     var color = d3.scaleOrdinal()
       .domain(groups)
-      .range([ "#440154ff", "#21908dff", "#fde725ff"]);
+      .range([ "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3"]);
     
     // Remove old dots
     svg.selectAll("dot")
@@ -219,15 +230,15 @@ export function drawScatterPlot(chartId, data) {
       // Adding points
       svg.append('g')
         .selectAll("dot")
-        .data(data[element])
+        .data(convertedData[element])
         .enter()
         .append("circle")
-          .attr("cx", function (d) { return x(d[0]); } )
-          .attr("cy", function (d) { return y(d[1]); } )
+          .attr("cx", function (d) { console.log(d); console.log(d.x); return x(d.x); } )
+          .attr("cy", function (d) { return y(d.y); } )
           .attr("r", pointRadius)
           .style("fill", color(element));
       // Creating the convex hull for each group
-      var pxPoint = data[element].map((d) => [x(d[0]), y(d[1])]);
+      var pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
       var hull = d3.polygonHull(pxPoint);
       svg.append('g')
          .append('path')

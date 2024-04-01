@@ -18,7 +18,8 @@ function App() {
     setVisualizationList(
       [
         ...visualizationList,
-        <DraggableWindow key={"viz-"+vizId++} restRoute={"/arrecadacao"} drawChartFunction={drawCharts.drawTimeChart}/>
+        <DraggableWindow key={"viz-"+vizId++} restRoute={"/dimensional-reduction"} drawChartFunction={drawCharts.drawScatterPlot}/>,
+        <DraggableWindow key={"viz-"+vizId++} restRoute={"/temporal-evolution"} drawChartFunction={drawCharts.drawTimeChart}/>
       ]
     )
   };
