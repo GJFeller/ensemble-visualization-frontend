@@ -1,6 +1,6 @@
 import './App.css';
-import EnsembleSideBar from './Layout/EnsembleSideBar/EnsembleSideBar';
 import ChartSideBar from './Layout/ChartSideBar';
+import EnsembleSideBar from './Layout/EnsembleSideBar/EnsembleSideBar';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
 import DraggableWindow from './Components/DraggableWindow';
@@ -18,7 +18,7 @@ function App() {
     setVisualizationList(
       [
         ...visualizationList,
-        <DraggableWindow key={"viz-"+vizId++} restRoute={"/dimensional-reduction"} drawChartFunction={drawCharts.drawScatterPlot}/>,
+        <DraggableWindow key={"viz-"+vizId++} restRoute={"/dimensional-reduction?method=PCA"} drawChartFunction={drawCharts.drawScatterPlot}/>, 
         <DraggableWindow key={"viz-"+vizId++} restRoute={"/temporal-evolution"} drawChartFunction={drawCharts.drawTimeChart}/>
       ]
     )

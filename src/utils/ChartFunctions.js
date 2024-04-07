@@ -84,7 +84,7 @@ export function drawTimeChart(chartId, data) {
        // Color scale: give me a specie name, I return a color
     var color = d3.scaleOrdinal()
       .domain(groups)
-      .range([ "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3"]);
+      .range(['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854']);
    
    // TODO: Draw the lines and the area
     // Remove old dots
@@ -136,7 +136,7 @@ export function drawTimeChart(chartId, data) {
                   .data(groups)
                   .enter()
                   .append("text")
-                    .attr("x", legendMargin.left+20)
+                    .attr("x", legendMargin.left+10)
                     .attr("y", function(d,i){ return legendMargin.top + i*25; })
                     .style("fill", function(d){ return color(d); })
                     .text(function(d){ return d})
@@ -154,7 +154,8 @@ export function drawTimeChart(chartId, data) {
 export function drawScatterPlot(chartId, data) {
     // Get dimensions for the plot
     const container = document.getElementById(chartId).parentNode;
-    const margin = {top: 10, right: 30, bottom: 30, left: 60};
+    const margin = {top: 10, right: 100, bottom: 30, left: 10};
+    const legendMargin = {top: 10, right: 5, bottom: 10, left: 10}
     const plotWidth = container.offsetWidth - margin.left - margin.right;
     const plotHeight = container.offsetHeight - margin.top - margin.bottom;
     const pointRadius = 2;
@@ -218,7 +219,7 @@ export function drawScatterPlot(chartId, data) {
     // Color scale: give me a specie name, I return a color
     var color = d3.scaleOrdinal()
       .domain(groups)
-      .range([ "#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3"]);
+      .range(['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854']);
     
     // Remove old dots
     svg.selectAll("dot")
@@ -233,7 +234,7 @@ export function drawScatterPlot(chartId, data) {
         .data(convertedData[element])
         .enter()
         .append("circle")
-          .attr("cx", function (d) { console.log(d); console.log(d.x); return x(d.x); } )
+          .attr("cx", function (d) { return x(d.x); } )
           .attr("cy", function (d) { return y(d.y); } )
           .attr("r", pointRadius)
           .style("fill", color(element));
@@ -248,6 +249,28 @@ export function drawScatterPlot(chartId, data) {
          .attr("d", `M${hull.join("L")}Z`);
     });
 
+   var legendContainer = svg.append("g")
+                           .attr("transform", "translate(" + plotWidth + "," + 0 + ")");
+   
+   legendContainer.selectAll("legenddots")
+                  .data(groups)
+                  .enter()
+                  .append("circle")
+                    .attr("cx", legendMargin.left)
+                    .attr("cy", function(d,i){ return legendMargin.top + i*25; })
+                    .attr("r", 7)
+                    .style("fill", function(d){ return color(d); });
+   
+   legendContainer.selectAll("legendlabels")
+                  .data(groups)
+                  .enter()
+                  .append("text")
+                    .attr("x", legendMargin.left+10)
+                    .attr("y", function(d,i){ return legendMargin.top + i*25; })
+                    .style("fill", function(d){ return color(d); })
+                    .text(function(d){ return d})
+                    .attr("text-anchor", "left")
+                    .style("alignment-baseline", "middle");
 }
 
 export function drawBarChart(chartId) {
