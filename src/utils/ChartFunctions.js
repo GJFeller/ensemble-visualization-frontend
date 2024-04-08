@@ -1,5 +1,9 @@
-import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3'
+
+d3.selection.prototype.moveToFront = function() {
+   d3.select(this).raise()
+   return this;
+};
 
 /**
  * Function to draw a timeline chart
@@ -158,7 +162,7 @@ export function drawScatterPlot(chartId, data) {
     const legendMargin = {top: 10, right: 5, bottom: 10, left: 10}
     const plotWidth = container.offsetWidth - margin.left - margin.right;
     const plotHeight = container.offsetHeight - margin.top - margin.bottom;
-    const pointRadius = 2;
+    const pointRadius = 4;
     var groups = []
 
     // FIXME: For some reason, the backend is returning each simulation as a string instead of a object.
@@ -226,6 +230,34 @@ export function drawScatterPlot(chartId, data) {
        .remove()
        .exit();
     
+   d3.selectAll(".scatterTooltip")
+     .remove()
+     .exit();
+
+   var tooltip = d3.select("body")
+       .append("div")
+       .attr("class", "scatterTooltip")
+       .style("position", "absolute")
+       .style("z-index", "10")
+       .style("visibility", "hidden")
+       .style("background", "#fff")
+       .style("border-width", "1px")
+       .style("border-style", "solid")
+       .style("border-color", "#000")
+       .text("a simple tooltip");
+   
+    // Drawing the convex hull for each ensemble
+    groups.forEach((element) => {
+      // Creating the convex hull for each group
+      var pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
+      var hull = d3.polygonHull(pxPoint);
+      svg.append('g')
+         .append('path')
+         .style("stroke", color(element))
+         .style("fill-opacity", "0.3")
+         .style("fill", color(element))
+         .attr("d", `M${hull.join("L")}Z`);
+    });
     // Add dots
     groups.forEach((element) => {
       // Adding points
@@ -237,16 +269,24 @@ export function drawScatterPlot(chartId, data) {
           .attr("cx", function (d) { return x(d.x); } )
           .attr("cy", function (d) { return y(d.y); } )
           .attr("r", pointRadius)
-          .style("fill", color(element));
-      // Creating the convex hull for each group
-      var pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
-      var hull = d3.polygonHull(pxPoint);
-      svg.append('g')
-         .append('path')
-         .style("stroke", color(element))
-         .style("fill-opacity", "0.3")
-         .style("fill", color(element))
-         .attr("d", `M${hull.join("L")}Z`);
+          .style("fill", color(element))
+          .text(function (d) { return d.name; })
+          .on("mouseover", function(event, d) {
+            d3.select(this)
+              .transition()
+              .duration(100)
+              .attr("r", pointRadius*2); 
+            tooltip.text(d.name); 
+            return tooltip.style("visibility", "visible");
+          })
+          .on("mousemove", function(event) {return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
+          .on("mouseout", function() {
+            d3.select(this)
+              .transition()
+              .duration(100)
+              .attr("r", pointRadius);
+              return tooltip.style("visibility", "hidden");
+           });
     });
 
    var legendContainer = svg.append("g")
@@ -271,36 +311,5 @@ export function drawScatterPlot(chartId, data) {
                     .text(function(d){ return d})
                     .attr("text-anchor", "left")
                     .style("alignment-baseline", "middle");
-}
-
-export function drawBarChart(chartId) {
-    const data = [12, 5, 6, 6, 9, 10];
-    const container = document.getElementById(chartId).parentNode;
-    console.log(container);
-    const width = container.offsetWidth;
-    const height = container.offsetHeight;
-    const barSize = width/data.length - 5*(data.length-1);
-    console.log("width: " + width);
-    console.log("height: " + height);
-    console.log("barSize: " + barSize);
-
-    const svg = d3.select("#"+chartId)
-                  .attr("width", width)
-                  .attr("height", height);
-
-        var bars = svg.selectAll("rect")
-        .remove()
-        .exit()
-        .data(data);
-
-        
-        bars.enter()
-            .append("rect")
-            .attr("x", (d, i) => i * (barSize + 10))
-            .attr("y", (d, i) => height - 10 * d)
-            .attr("width", barSize)
-            .attr("height", (d, i) => d * 10)
-            .attr("fill", "green");
-        
-            console.log(svg.selectAll("rect"));
+   
 }
