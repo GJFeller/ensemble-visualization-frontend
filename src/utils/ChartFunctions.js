@@ -23,6 +23,9 @@ export function drawTimeChart(chartId, data) {
     var xMin = Number.MAX_VALUE, yMin = Number.MAX_VALUE;
     var groupsAreaTemp = {}, groupsArea = {};
 
+    const xAccessor = d => d[0]
+    const yAccessor = d => d[1]
+
     for(var item in data) {
         groups.push(item);
         groupsAreaTemp = {};
@@ -90,26 +93,36 @@ export function drawTimeChart(chartId, data) {
       .domain(groups)
       .range(['#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854']);
    
-   // TODO: Draw the lines and the area
     // Remove old dots
     svg.selectAll("path")
        .remove()
        .exit();
    
-   // Add the line
+   d3.selectAll(".timechartTooltip")
+     .remove()
+     .exit();
+   var tooltip = d3.select("body")
+       .append("div")
+       .attr("class", "timechartTooltip")
+       .style("position", "absolute")
+       .style("z-index", "10")
+       .style("visibility", "hidden")
+       .style("background", "#fff")
+       .style("border-width", "1px")
+       .style("border-style", "solid")
+       .style("border-color", "#000")
+       .text("a simple tooltip");
+
+   const tooltipDot = svg
+       .append("circle")
+       .attr("r", 5)
+       .attr("fill", "#fc8781")
+       .attr("stroke", "black")
+       .attr("stroke-width", 2)
+       .style("opacity", 0)
+       .style('pointer-events', 'none')
+   // Drawing areas
    groups.forEach((ensemble) => {
-      for(const [simulation, points] of Object.entries(data[ensemble])) {
-         svg
-            .append("path")
-            .datum(data[ensemble][simulation])
-            .attr("fill", "none")
-            .style("stroke", color(ensemble))
-            .attr("stroke-width", 1.5)
-            .attr("d", d3.line()
-             .x(function(d) { return x(d[0]) })
-             .y(function(d) { return y(d[1]) })
-            );
-      }
       svg
          .append("path")
          .datum(groupsArea[ensemble])
@@ -121,7 +134,41 @@ export function drawTimeChart(chartId, data) {
            .y0(function(d) { return y(d.yMin); })
            .y1(function(d) { return y(d.yMax); })
          );
+   });
+   // Add the line
+   groups.forEach((ensemble) => {
+      for(const [simulation, points] of Object.entries(data[ensemble])) {
+         svg
+            .append("path")
+            .datum(data[ensemble][simulation])
+            .attr("fill", "none")
+            .style("stroke", color(ensemble))
+            .attr("stroke-width", 1)
+            .attr("d", d3.line()
+             .x(function(d) { return x(d[0]) })
+             .y(function(d) { return y(d[1]) })
+            )
+            .on('touchmouse mousemove', function(event){
+              const mousePos = d3.pointer(event, this);
+              const year = x.invert(mousePos[0]);
+              const yearBisector = d3.bisector(d => d[0]).left;
+              const bisectionIndex = yearBisector(data[ensemble][simulation], year);
+              const hoveredIndexData = data[ensemble][simulation][Math.max(0,bisectionIndex - 1)]
+              console.log(simulation + ": " +hoveredIndexData)
 
+              // Update Image
+              tooltipDot.style('opacity', 1)
+                .attr('cx', x(xAccessor(hoveredIndexData)))
+                .attr('cy', y(yAccessor(hoveredIndexData)))
+               
+               tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px").style("visibility", "visible")
+               tooltip.text(simulation +":\n"+"Ano: "+hoveredIndexData[0]+"\nValor: "+hoveredIndexData[1])
+            })
+            .on('mouseleave', function(event){
+               tooltipDot.style("opacity", 0)
+               tooltip.style("visibility", "hidden")
+            });
+      }
    });
 
    var legendContainer = svg.append("g")
