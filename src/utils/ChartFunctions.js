@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+import * as utils from './utils'
 
 d3.selection.prototype.moveToFront = function() {
    d3.select(this).raise()
@@ -151,9 +152,10 @@ export function drawTimeChart(chartId, data) {
             .on('touchmouse mousemove', function(event){
               const mousePos = d3.pointer(event, this);
               const year = x.invert(mousePos[0]);
-              const yearBisector = d3.bisector(d => d[0]).left;
+              const yearBisector = d3.bisector(d => d[0]).center;
               const bisectionIndex = yearBisector(data[ensemble][simulation], year);
-              const hoveredIndexData = data[ensemble][simulation][Math.max(0,bisectionIndex - 1)]
+              const hoveredIndexData = data[ensemble][simulation][bisectionIndex]
+              //const hoveredIndexData = data[ensemble][simulation][Math.max(0,bisectionIndex - 1)]
               console.log(simulation + ": " +hoveredIndexData)
 
               // Update Image
@@ -293,6 +295,7 @@ export function drawScatterPlot(chartId, data) {
        .style("border-color", "#000")
        .text("a simple tooltip");
    
+   let points = {};
     // Drawing the convex hull for each ensemble
     groups.forEach((element) => {
       // Creating the convex hull for each group
@@ -308,11 +311,12 @@ export function drawScatterPlot(chartId, data) {
     // Add dots
     groups.forEach((element) => {
       // Adding points
-      svg.append('g')
+      points = svg.append('g')
         .selectAll("dot")
         .data(convertedData[element])
         .enter()
         .append("circle")
+          .attr("class", "points")
           .attr("cx", function (d) { return x(d.x); } )
           .attr("cy", function (d) { return y(d.y); } )
           .attr("r", pointRadius)
@@ -335,6 +339,21 @@ export function drawScatterPlot(chartId, data) {
               return tooltip.style("visibility", "hidden");
            });
     });
+   svg.call(d3.brush().on("start brush end", ({selection}) => {
+      let value = [];
+      if (selection) {
+         const [[x0, y0], [x1, y1]] = selection;
+         value = d3.selectAll(".points").style("fill", "gray")
+                       .filter(d => x0 <= x(d.x) && x(d.x) < x1
+                     && y0 <= y(d.y) && y(d.y) < y1)
+                       .style("fill", d => color(utils.getKeyByValueAttribute(data, "name", d.name)))
+                       .data();
+
+      }
+      else {
+         d3.selectAll("dot").style("fill", d => color(utils.getKeyByValueAttribute(data, "name", d.name)));
+      }
+   }))
 
    var legendContainer = svg.append("g")
                            .attr("transform", "translate(" + plotWidth + "," + 0 + ")");
