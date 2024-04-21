@@ -308,6 +308,21 @@ export function drawScatterPlot(chartId, data) {
          .style("fill", color(element))
          .attr("d", `M${hull.join("L")}Z`);
     });
+   svg.call(d3.brush().on("start brush end", ({selection}) => {
+      let value = [];
+      if (selection) {
+         const [[x0, y0], [x1, y1]] = selection;
+         value = d3.selectAll(".points").style("fill", "gray")
+                       .filter(d => x0 <= x(d.x) && x(d.x) < x1
+                     && y0 <= y(d.y) && y(d.y) < y1)
+                       .style("fill", function(d) { return color(utils.getKeyByValueAttribute(convertedData, "name", d.name))})
+                       .data();
+
+      }
+      else {
+         d3.selectAll("dot").style("fill", d => color(utils.getKeyByValueAttribute(convertedData, "name", d.name)));
+      }
+   }))
     // Add dots
     groups.forEach((element) => {
       // Adding points
@@ -339,21 +354,6 @@ export function drawScatterPlot(chartId, data) {
               return tooltip.style("visibility", "hidden");
            });
     });
-   svg.call(d3.brush().on("start brush end", ({selection}) => {
-      let value = [];
-      if (selection) {
-         const [[x0, y0], [x1, y1]] = selection;
-         value = d3.selectAll(".points").style("fill", "gray")
-                       .filter(d => x0 <= x(d.x) && x(d.x) < x1
-                     && y0 <= y(d.y) && y(d.y) < y1)
-                       .style("fill", d => color(utils.getKeyByValueAttribute(data, "name", d.name)))
-                       .data();
-
-      }
-      else {
-         d3.selectAll("dot").style("fill", d => color(utils.getKeyByValueAttribute(data, "name", d.name)));
-      }
-   }))
 
    var legendContainer = svg.append("g")
                            .attr("transform", "translate(" + plotWidth + "," + 0 + ")");
