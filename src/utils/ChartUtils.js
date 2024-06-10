@@ -1,6 +1,84 @@
 import * as d3 from 'd3'
 import * as utils from './utils'
 
+export class ChartOptions {
+
+   #drOptions = {
+     drMethodList: [],
+     showConvexHull: true
+   };
+
+   #temporalOptions = {
+     temporalVariableList: [],
+     logScale: false,
+     drawAreas: true,
+   };
+
+   constructor() {
+      if(!ChartOptions.instance) {
+         // TODO: Chamar do backend para preencher as opções
+         const drMethodListResponse = fetch(process.env.REACT_APP_BACKEND_URL+"/dr-methods");
+         console.log(drMethodListResponse);
+         ChartOptions.instance = this;
+      }
+      return ChartOptions.instance;
+   }
+
+   get drOptions() {return this.#drOptions; }
+   get temporalOptions() {return this.#temporalOptions; }
+
+   static getOptions(chartType) {
+      switch(chartType) {
+         case ChartType.DR:
+            return this.drOptions;
+         case ChartType.TEMPORAL:
+            return this.temporalOptions;
+         default:
+            throw new Error("Chart type does not exist")
+      }
+   }
+}
+
+
+export class ChartType {
+   static #_DR = 0;
+   static #_TEMPORAL = 1;
+
+   static get DR() { return this.#_DR; }
+   static get TEMPORAL() { return this.#_TEMPORAL; }
+
+   static chartOptions(chartType) {
+      switch(chartType) {
+         case this.#_DR:
+            return {
+               drMethod: "PCA",
+               showConvexHull: true
+            }
+         case this.#_TEMPORAL:
+            return {
+               variable: "TOTAL ARRECADAÇÃO",
+               logScale: false,
+               drawAreas: true,
+            }
+         default:
+            throw new Error("Chart type does not exist")
+      }
+   }
+
+   static drawChart(chartType, chartId, data) {
+      switch(chartType) {
+         case this.#_DR:
+            drawScatterPlot(chartId, data);
+            break;
+         case this.#_TEMPORAL:
+            drawTimeChart(chartId, data);
+            break;
+         default:
+            throw new Error("Chart type does not exist")
+      }
+   }
+}
+
 d3.selection.prototype.moveToFront = function() {
    d3.select(this).raise()
    return this;
@@ -112,6 +190,8 @@ export function drawTimeChart(chartId, data) {
        .style("border-width", "1px")
        .style("border-style", "solid")
        .style("border-color", "#000")
+       .style("padding-left", "2px")
+       .style("padding-right", "2px")
        .text("a simple tooltip");
 
    const tooltipDot = svg
@@ -293,6 +373,8 @@ export function drawScatterPlot(chartId, data) {
        .style("border-width", "1px")
        .style("border-style", "solid")
        .style("border-color", "#000")
+       .style("padding-left", "2px")
+       .style("padding-right", "2px")
        .text("a simple tooltip");
    
    let points = {};

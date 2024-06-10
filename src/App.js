@@ -5,24 +5,41 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
 import DraggableWindow from './Components/DraggableWindow';
 import { useState } from 'react';
-import * as drawCharts from './utils/ChartFunctions';
+import * as ChartUtils from './utils/ChartUtils';
 
 
 let vizId = 0;
+
+let chartOptions = new ChartUtils.ChartOptions();
 
 function App() {
   const [visualizationList, setVisualizationList] = useState([]);
 
   const createChart = () => {
     console.log("App.createChart()");
+    console.log(chartOptions);
     setVisualizationList(
       [
         ...visualizationList,
-        <DraggableWindow key={"viz-"+vizId++} restRoute={"/dimensional-reduction?method=PCA"} drawChartFunction={drawCharts.drawScatterPlot}/>, 
-        <DraggableWindow key={"viz-"+vizId++} restRoute={"/temporal-evolution"} drawChartFunction={drawCharts.drawTimeChart}/>
+        <DraggableWindow 
+          key={"viz-"+vizId++} 
+          restRoute={"/dimensional-reduction?method=PCA"}
+          chartType={ChartUtils.ChartType.DR}
+          showChartOptions={showChartOptions}
+        />, 
+        <DraggableWindow 
+          key={"viz-"+vizId++} 
+          restRoute={"/temporal-evolution"} 
+          chartType={ChartUtils.ChartType.TEMPORAL}
+          showChartOptions={showChartOptions}
+        />
       ]
     )
   };
+
+  const showChartOptions = (windowId) => {
+    console.log("Show chart options for window:", windowId);
+  }
 
   return (
     <div className="bg-slate-400">

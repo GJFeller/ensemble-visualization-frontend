@@ -35,10 +35,11 @@ export function getKeyByValueAttribute(object, attribute, value) {
   for(const upperKeyIdx in upperKeys) {
     const upperKey = upperKeys[upperKeyIdx];
     for(const keyIdx in object[upperKey]) {
-      const objData = object[upperKey][keyIdx];
-      if (objData[attribute] === value) {
+      let objData = object[upperKey][keyIdx];
+      if (objData instanceof String)
+        objData = JSON.parse(objData);
+      if (objData[attribute] === value)
         return upperKey;
-      }
     }
   }
   return undefined;

@@ -1,19 +1,31 @@
 import React, { useEffect, useRef } from 'react';
+import { ChartType } from '../utils/ChartUtils';
 
 import Draggable from 'react-draggable';
+import closeIcon from '../Images/close.png'
+import optionsIcon from '../Images/options.png'
 
 let plotId = 0;
 
 export default function DraggableWindow({
   title = "Header Title",
   restRoute = "/",
-  drawChartFunction = () => {}
+  chartType = ChartType.DR,
+  showChartOptions = () => {}
 }) {
 
   const container = useRef(null);
   const resizible = useRef(null);
   const windowBodyId = "window-body"+plotId;
   const chartId = "plot"+plotId++;
+
+  const openOptions = (e) => {
+    showChartOptions(chartId);
+  }
+
+  const closeWindow = (e) => {
+    console.log("Clicked to close window:", chartId);
+  }
 
   useEffect(() => {
     fetch(process.env.REACT_APP_BACKEND_URL+restRoute)
@@ -22,11 +34,11 @@ export default function DraggableWindow({
     })
     .then((data) => {
       console.log(data);
-      drawChartFunction(chartId, data);
+      ChartType.drawChart(chartType, chartId, data);
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
-        drawChartFunction(chartId, data);
+        ChartType.drawChart(chartType, chartId, data);
       });
 
       resizeObserver.observe(resizible.current);
@@ -34,7 +46,7 @@ export default function DraggableWindow({
         resizeObserver.disconnect();
       };
     });
-  }, [restRoute, drawChartFunction]);
+  }, [restRoute, chartType]);
 
   return (
     <Draggable
@@ -44,16 +56,14 @@ export default function DraggableWindow({
       scale={1}
     >
       <div ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
-        <div className='handle'>
-          <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
-            <div>
-              
-            </div>
-            <div className="content-center">
+        <div className='handle justify-items-stretch'>
+          <div id="header" className="bg-gray-300 h-16 flex flex-row space-x-2 rounded">
+            <div className="grow place-self-center">
               <h2 className="text-center">{title}</h2>
             </div>
-            <div className="">
-              
+            <div className="place-self-center flex justify-end space-x-2">
+              <button className="border-2 border-black rounded-lg p-1" onClick={openOptions}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
+              <button className="border-2 border-black rounded-lg p-1" onClick={closeWindow}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
             </div>
           </div>
         </div>
