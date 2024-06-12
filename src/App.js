@@ -10,14 +10,14 @@ import * as ChartUtils from './utils/ChartUtils';
 
 let vizId = 0;
 
-let chartOptions = new ChartUtils.ChartOptions();
+let chartSettings = new ChartUtils.ChartSettings();
 
 function App() {
   const [visualizationList, setVisualizationList] = useState([]);
 
   const createChart = () => {
     console.log("App.createChart()");
-    console.log(chartOptions);
+    console.log(chartSettings);
     setVisualizationList(
       [
         ...visualizationList,
@@ -25,19 +25,19 @@ function App() {
           key={"viz-"+vizId++} 
           restRoute={"/dimensional-reduction?method=PCA"}
           chartType={ChartUtils.ChartType.DR}
-          showChartOptions={showChartOptions}
+          showChartSettings={showChartSettings}
         />, 
         <DraggableWindow 
           key={"viz-"+vizId++} 
           restRoute={"/temporal-evolution"} 
           chartType={ChartUtils.ChartType.TEMPORAL}
-          showChartOptions={showChartOptions}
+          showChartSettings={showChartSettings}
         />
       ]
     )
   };
 
-  const showChartOptions = (windowId) => {
+  const showChartSettings = (windowId) => {
     console.log("Show chart options for window:", windowId);
   }
 

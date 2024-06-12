@@ -1,33 +1,104 @@
 import * as d3 from 'd3'
 import * as utils from './utils'
 
-export class ChartOptions {
+/**
+ * It connects to the backend to get options for charts which comes from the backend application.
+ * E.g. dimensionality reduction techniques, variables from the simulations, etc.
+ *
+ */
+class ChartOptions {
+
+   #drMethodList
+   #ensembleVariableList
+
+   constructor() {
+      if(ChartOptions.instance) {
+         return ChartOptions.instance;
+      }
+      this.#drMethodList = [];
+      this.#ensembleVariableList = [];
+      ChartOptions.instance = this;
+      return ChartOptions.instance;
+   }
+
+   get drMethodList() { return this.#drMethodList; }
+   get ensembleVariableList() {return this.#ensembleVariableList; }
+
+   async connect() {
+      if (!this.#drMethodList.length) {
+         try {
+            let response = await fetch(process.env.REACT_APP_BACKEND_URL+"/dr-methods");
+            this.#drMethodList = await response.json();
+            console.log(this.#drMethodList);
+         }
+         catch(err) {
+            console.log(err);
+         }
+      }
+      if (!this.#ensembleVariableList.length) {
+         try {
+            let response = await fetch(process.env.REACT_APP_BACKEND_URL+"/variables");
+            this.#ensembleVariableList = await response.json();
+            console.log(this.#ensembleVariableList);
+         }
+         catch(err) {
+            console.log(err);
+         }
+      }
+      return this;
+   }
+
+   getOptions(chartType) {
+      switch(chartType) {
+         case ChartType.DR:
+            return this.drMethodList;
+         case ChartType.TEMPORAL:
+            return this.ensembleVariableList;
+         default:
+            throw new Error("Chart type does not exist")
+      }
+      
+   }
+}
+
+export let chartOptions = await new ChartOptions().connect();
+
+/**
+ * It stores settings used by a chart.
+ */
+export class ChartSettings {
 
    #chartType = ChartType.DR;
    #chartTitle = "Title"
+   #chartId = ""
 
    #drOptions = {
-     drMethodList: "",
+     drMethod: "",
      showConvexHull: true
    };
 
    #temporalOptions = {
-     temporalVariableList: "",
+     temporalVariable: "",
      logScale: false,
      drawAreas: true,
    };
 
-   constructor(chartType = ChartType.DR, chartTitle = "Title") {
+   constructor(chartType = ChartType.DR, chartTitle = "Title", chartId = "") {
       this.#chartType = chartType;
       this.#chartTitle = chartTitle;
+      this.#chartId = chartId;
    }
 
    get drOptions() { return this.#drOptions; }
    get temporalOptions() { return this.#temporalOptions; }
    get chartType() { return this.#chartType; }
    get chartTitle() { return this.#chartTitle; }
+   get chartId() { return this.#chartId; }
 
-   static getOptions() {
+   set chartTitle(chartTitle) { this.#chartTitle = chartTitle; }
+   set chartId(chartId) { this.#chartId = chartId; }
+
+   static getSettings() {
       switch(this.chartType) {
          case ChartType.DR:
             return this.drOptions;

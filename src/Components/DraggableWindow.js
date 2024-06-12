@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChartType, ChartRender, ChartOptions } from '../utils/ChartUtils';
+import { ChartType, ChartRender, ChartSettings, chartOptions } from '../utils/ChartUtils';
 
 import Draggable from 'react-draggable';
 import closeIcon from '../Images/close.png'
@@ -7,21 +7,25 @@ import optionsIcon from '../Images/options.png'
 
 let plotId = 0;
 
+
 export default function DraggableWindow({
   title = "Header Title",
   restRoute = "/",
   chartType = ChartType.DR,
-  showChartOptions = () => {}
+  showChartSettings = () => {}
 }) {
 
   const container = useRef(null);
   const resizible = useRef(null);
   const windowBodyId = "window-body"+plotId;
   const chartId = "plot"+plotId++;
-  const [chartOptions, setChartOptions] = useState(new ChartOptions(chartType, title))
+  const [chartSettings, setChartSettings] = useState(new ChartSettings(chartType, title, chartId))
+  
+  console.log("DR method list:");
+  console.log(chartOptions.getOptions(ChartType.DR));
 
-  const openOptions = (e) => {
-    showChartOptions(chartId);
+  const openSettings = (e) => {
+    showChartSettings(chartSettings);
   }
 
   const closeWindow = (e) => {
@@ -35,11 +39,11 @@ export default function DraggableWindow({
     })
     .then((data) => {
       console.log(data);
-      ChartRender.drawChart(chartType, chartId, data);
+      ChartRender.drawChart(chartSettings.chartType, chartId, data);
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
-        ChartRender.drawChart(chartType, chartId, data);
+        ChartRender.drawChart(chartSettings.chartType, chartId, data);
       });
 
       resizeObserver.observe(resizible.current);
@@ -60,10 +64,10 @@ export default function DraggableWindow({
         <div className='handle justify-items-stretch'>
           <div id="header" className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded">
             <div className="grow place-self-center">
-              <h2 className="text-center">{chartOptions.chartTitle}</h2>
+              <h2 className="text-center">{chartSettings.chartTitle}</h2>
             </div>
             <div className="place-self-center flex justify-end space-x-2">
-              <button className="border-2 border-black rounded-lg p-1" onClick={openOptions}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
+              <button className="border-2 border-black rounded-lg p-1" onClick={openSettings}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
               <button className="border-2 border-black rounded-lg p-1" onClick={closeWindow}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
             </div>
           </div>
