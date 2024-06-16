@@ -18,16 +18,19 @@ export default function ChartSettingsPanel(
     const onChangeConvexHull = (e) => {
 
     };
+    const onChangeLogScale = (e) => {
+
+    };
 
     return (
         <>
         {currentChartSettings !== undefined &&
-           <div>
+           <div className='space-y-1 px-1'>
            {currentChartSettings.currentChartSettings.chartType === ChartUtils.ChartType.DR &&
                <>
                <div>
                   <label>Dimensionality reduction technique:</label>
-                  <select>
+                  <select className='text-sm max-w-full rounded-lg'>
                     {ChartUtils.chartOptions.drMethodList.length > 0 && ChartUtils.chartOptions.drMethodList.map((method) => {
                         return (<option key={method} value={method}>{method}</option>)
                     })}
@@ -39,7 +42,7 @@ export default function ChartSettingsPanel(
                     id="convexHull"
                     name="convexHull"
                     value="convexHull"
-                    checked={currentChartSettings.currentChartSettings.drOptions.showConvexHull}
+                    checked={currentChartSettings.currentChartSettings.drSettings.showConvexHull}
                     onChange={onChangeConvexHull}
                   /> Show convex hull
                </div>
@@ -47,7 +50,36 @@ export default function ChartSettingsPanel(
                
            }
            {currentChartSettings.currentChartSettings.chartType === ChartUtils.ChartType.TEMPORAL &&
-               <label>Variable:</label>
+               <>
+               <div>
+                  <label>Variable:</label>
+                  <select className='text-sm max-w-full rounded-lg'>
+                    {ChartUtils.chartOptions.ensembleVariableList.length > 0 && ChartUtils.chartOptions.ensembleVariableList.map((variable) => {
+                        return (<option key={variable} className='text-sm' value={variable}>{variable}</option>)
+                    })}
+                  </select>
+               </div>
+               <div>
+                  <input 
+                    type="checkbox"
+                    id="logScale"
+                    name="logScale"
+                    value="logScale"
+                    checked={currentChartSettings.currentChartSettings.temporalSettings.logScale}
+                    onChange={onChangeLogScale}
+                  /> Use Log scale
+               </div>
+               <div>
+                  <input 
+                    type="checkbox"
+                    id="drawAreas"
+                    name="drawAreas"
+                    value="drawAreas"
+                    checked={currentChartSettings.currentChartSettings.temporalSettings.drawAreas}
+                    onChange={onChangeLogScale}
+                  /> Draw areas in chart
+               </div>
+               </>
            }
            </div>
 

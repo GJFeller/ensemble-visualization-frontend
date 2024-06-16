@@ -7,7 +7,7 @@ export default function ChartSideBar({
 }) {
     console.log(currentChartSettings);
     return (
-        <div className='border-1 rounded-md m-1'>
+        <div className='border-1 rounded-md m-1 space-y-2'>
           <Accordion title="Selected Simulations"/>
           {currentChartSettings !== undefined &&
           <Accordion title={"Chart Settings for "+currentChartSettings.chartTitle}>

@@ -72,12 +72,12 @@ export class ChartSettings {
    #chartTitle = "Title"
    #chartId = ""
 
-   #drOptions = {
+   #drSettings = {
      drMethod: "",
      showConvexHull: true
    };
 
-   #temporalOptions = {
+   #temporalSettings = {
      temporalVariable: "",
      logScale: false,
      drawAreas: true,
@@ -89,8 +89,8 @@ export class ChartSettings {
       this.#chartId = chartId;
    }
 
-   get drOptions() { return this.#drOptions; }
-   get temporalOptions() { return this.#temporalOptions; }
+   get drSettings() { return this.#drSettings; }
+   get temporalSettings() { return this.#temporalSettings; }
    get chartType() { return this.#chartType; }
    get chartTitle() { return this.#chartTitle; }
    get chartId() { return this.#chartId; }
@@ -101,9 +101,9 @@ export class ChartSettings {
    static getSettings() {
       switch(this.chartType) {
          case ChartType.DR:
-            return this.drOptions;
+            return this.drSettings;
          case ChartType.TEMPORAL:
-            return this.temporalOptions;
+            return this.temporalSettings;
          default:
             throw new Error("Chart type does not exist")
       }
