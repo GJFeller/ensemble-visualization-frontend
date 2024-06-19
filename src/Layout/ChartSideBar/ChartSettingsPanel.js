@@ -5,18 +5,22 @@ import * as ChartUtils from '../../utils/ChartUtils';
 export default function ChartSettingsPanel(
     currentChartSettings = undefined
 ) {
-    //const [chartSettings, setChartSettings] = useState(currentChartSettings);
+    const [chartSettings, setChartSettings] = useState(currentChartSettings.currentChartSettings);
 
-    //useEffect( () => {
-    //    console.log("Teste");
-    //    setChartSettings(currentChartSettings);
-    //}, [currentChartSettings]);
+    useEffect( () => {
+        console.log("Teste");
+        setChartSettings(currentChartSettings.currentChartSettings);
+    }, [currentChartSettings]);
 
     console.log(currentChartSettings);
     console.log(ChartUtils.chartOptions)
 
     const onChangeConvexHull = (e) => {
-
+        let chartSettingsCopy = { ...chartSettings }
+        chartSettings.drSettings.showConvexHull = !chartSettings.drSettings.showConvexHull;
+        setChartSettings(chartSettings => ({
+          ...chartSettingsCopy
+        }));
     };
     const onChangeLogScale = (e) => {
 
@@ -24,9 +28,9 @@ export default function ChartSettingsPanel(
 
     return (
         <>
-        {currentChartSettings !== undefined &&
+        {chartSettings !== undefined &&
            <div className='space-y-1 px-1'>
-           {currentChartSettings.currentChartSettings.chartType === ChartUtils.ChartType.DR &&
+           {chartSettings.chartType === ChartUtils.ChartType.DR &&
                <>
                <div>
                   <label>Dimensionality reduction technique:</label>
@@ -42,14 +46,14 @@ export default function ChartSettingsPanel(
                     id="convexHull"
                     name="convexHull"
                     value="convexHull"
-                    checked={currentChartSettings.currentChartSettings.drSettings.showConvexHull}
+                    checked={chartSettings.drSettings.showConvexHull}
                     onChange={onChangeConvexHull}
                   /> Show convex hull
                </div>
                </>
                
            }
-           {currentChartSettings.currentChartSettings.chartType === ChartUtils.ChartType.TEMPORAL &&
+           {chartSettings.chartType === ChartUtils.ChartType.TEMPORAL &&
                <>
                <div>
                   <label>Variable:</label>
@@ -65,7 +69,7 @@ export default function ChartSettingsPanel(
                     id="logScale"
                     name="logScale"
                     value="logScale"
-                    checked={currentChartSettings.currentChartSettings.temporalSettings.logScale}
+                    checked={chartSettings.temporalSettings.logScale}
                     onChange={onChangeLogScale}
                   /> Use Log scale
                </div>
@@ -75,7 +79,7 @@ export default function ChartSettingsPanel(
                     id="drawAreas"
                     name="drawAreas"
                     value="drawAreas"
-                    checked={currentChartSettings.currentChartSettings.temporalSettings.drawAreas}
+                    checked={chartSettings.temporalSettings.drawAreas}
                     onChange={onChangeLogScale}
                   /> Draw areas in chart
                </div>

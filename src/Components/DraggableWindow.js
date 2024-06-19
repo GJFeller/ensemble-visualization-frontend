@@ -43,6 +43,7 @@ export default function DraggableWindow({
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
+        console.log(chartSettings);
         ChartRender.drawChart(chartSettings.chartType, chartId, data);
       });
 

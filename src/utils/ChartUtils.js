@@ -73,12 +73,12 @@ export class ChartSettings {
    #chartId = ""
 
    #drSettings = {
-     drMethod: "",
+     drMethod: chartOptions.drMethodList[0],
      showConvexHull: true
    };
 
    #temporalSettings = {
-     temporalVariable: "",
+     temporalVariable: chartOptions.ensembleVariableList[0],
      logScale: false,
      drawAreas: true,
    };
