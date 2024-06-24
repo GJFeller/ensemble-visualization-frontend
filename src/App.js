@@ -56,15 +56,6 @@ function App() {
             {visualizationList}
           </VisualizationMain>
         </Panel>
-        <PanelResizeHandle className="w-1 bg-black" />
-        <Panel minSize={20} maxSize={20}>
-          <div className="min-h-screen bg-slate-400">
-            <ChartSideBar
-              currentChartSettings={currentChartSettings}
-            >
-            </ChartSideBar>
-          </div>
-        </Panel>
       </PanelGroup>
     </div>
   )

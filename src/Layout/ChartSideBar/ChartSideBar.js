@@ -1,5 +1,5 @@
 import Accordion from '../../Components/Accordion';
-import ChartSettingsPanel from './ChartSettingsPanel';
+import ChartSettingsPanel from '../../Components/ChartSettingsPanel';
 
 
 export default function ChartSideBar({

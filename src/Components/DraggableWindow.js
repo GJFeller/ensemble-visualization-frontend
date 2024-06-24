@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChartType, ChartRender, ChartSettings, chartOptions } from '../utils/ChartUtils';
+import Modal from './Modal';
+import ChartSettingsPanel from './ChartSettingsPanel';
 
 import Draggable from 'react-draggable';
 import closeIcon from '../Images/close.png'
@@ -19,13 +21,18 @@ export default function DraggableWindow({
   const resizible = useRef(null);
   const windowBodyId = "window-body"+plotId;
   const chartId = "plot"+plotId++;
-  const [chartSettings, setChartSettings] = useState(new ChartSettings(chartType, title, chartId))
+
+  const [chartSettings, setChartSettings] = useState(new ChartSettings(chartType, title, chartId));
+  const [isOpenModal, setIsOpenModal] = useState(false);
   
+  let modalTitle = "Chart settings for " + chartSettings.chartTitle;
+
   console.log("DR method list:");
   console.log(chartOptions.getOptions(ChartType.DR));
 
   const openSettings = (e) => {
-    showChartSettings(chartSettings);
+    //showChartSettings(chartSettings);
+    setIsOpenModal(true);
   }
 
   const closeWindow = (e) => {
@@ -52,36 +59,45 @@ export default function DraggableWindow({
         resizeObserver.disconnect();
       };
     });
-  }, [restRoute, chartType]);
+  }, [restRoute, chartSettings]);
 
   return (
-    <Draggable
-      handle='.handle' 
-      defaultPosition={{x: 0, y: 0}}
-      position={null}
-      scale={1}
-    >
-      <div ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
-        <div className='handle justify-items-stretch'>
-          <div id="header" className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded">
-            <div className="grow place-self-center">
-              <h2 className="text-center">{chartSettings.chartTitle}</h2>
-            </div>
-            <div className="place-self-center flex justify-end space-x-2">
-              <button className="border-2 border-black rounded-lg p-1" onClick={openSettings}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
-              <button className="border-2 border-black rounded-lg p-1" onClick={closeWindow}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
+    <>
+      <Draggable
+        handle='.handle' 
+        defaultPosition={{x: 0, y: 0}}
+        position={null}
+        scale={1}
+      >
+        <div ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
+          <div className='handle justify-items-stretch'>
+            <div id="header" className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded">
+              <div className="grow place-self-center">
+                <h2 className="text-center">{chartSettings.chartTitle}</h2>
+              </div>
+              <div className="place-self-center flex justify-end space-x-2">
+                <button className="border-2 border-black rounded-lg p-1" onClick={openSettings}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
+                <button className="border-2 border-black rounded-lg p-1" onClick={closeWindow}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
+              </div>
             </div>
           </div>
+          <div 
+            id={windowBodyId}
+            className='flex items-center flex-auto max-w-full max-h-full overflow-auto' 
+            ref={container}
+          >
+            <svg id={chartId}></svg>
+          </div>
         </div>
-        <div 
-          id={windowBodyId}
-          className='flex items-center flex-auto max-w-full max-h-full overflow-auto' 
-          ref={container}
+      </Draggable>
+      <Modal 
+        isOpen={isOpenModal} 
+        setIsOpenModal={() => setIsOpenModal(!isOpenModal)}
+        title={modalTitle}
         >
-          <svg id={chartId}></svg>
-        </div>
-      </div>
-    </Draggable>
+        <ChartSettingsPanel currentChartSettings={chartSettings}/>
+      </Modal>
+    </>
   );
 }
 

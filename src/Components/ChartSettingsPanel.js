@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import * as ChartUtils from '../../utils/ChartUtils';
+import * as ChartUtils from '../utils/ChartUtils';
 
 
 export default function ChartSettingsPanel(
