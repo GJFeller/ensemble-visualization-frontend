@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChartType, ChartRender, ChartSettings, chartOptions } from '../utils/ChartUtils';
-import Modal from './Modal';
-import ChartSettingsPanel from './ChartSettingsPanel';
+import Modal from './ModalChartSettings';
 
 import Draggable from 'react-draggable';
 import closeIcon from '../Images/close.png'
 import optionsIcon from '../Images/options.png'
+import ModalChartSettings from './ModalChartSettings';
 
 let plotId = 0;
 
@@ -26,6 +26,7 @@ export default function DraggableWindow({
   const [isOpenModal, setIsOpenModal] = useState(false);
   
   let modalTitle = "Chart settings for " + chartSettings.chartTitle;
+  let data = [];
 
   console.log("DR method list:");
   console.log(chartOptions.getOptions(ChartType.DR));
@@ -44,7 +45,8 @@ export default function DraggableWindow({
     .then((res) => {
       return res.json();
     })
-    .then((data) => {
+    .then((dataResponse) => {
+      data = dataResponse;
       console.log(data);
       ChartRender.drawChart(chartSettings.chartType, chartId, data);
 
@@ -90,13 +92,15 @@ export default function DraggableWindow({
           </div>
         </div>
       </Draggable>
-      <Modal 
+      <ModalChartSettings 
         isOpen={isOpenModal} 
         setIsOpenModal={() => setIsOpenModal(!isOpenModal)}
         title={modalTitle}
+        chartSettings={chartSettings}
+        currentPlotData={data}
+        restRoute={restRoute}
         >
-        <ChartSettingsPanel currentChartSettings={chartSettings}/>
-      </Modal>
+      </ModalChartSettings>
     </>
   );
 }

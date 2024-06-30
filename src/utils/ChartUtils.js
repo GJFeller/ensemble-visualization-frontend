@@ -97,6 +97,9 @@ export class ChartSettings {
 
    set chartTitle(chartTitle) { this.#chartTitle = chartTitle; }
    set chartId(chartId) { this.#chartId = chartId; }
+   set drSettings(drSettings) { this.#drSettings = drSettings; }
+   set temporalSettings(temporalSettings) { this.#temporalSettings = temporalSettings; }
+   set chartType(chartType) { this.#chartType = chartType; }
 
    static getSettings() {
       switch(this.chartType) {
@@ -107,6 +110,13 @@ export class ChartSettings {
          default:
             throw new Error("Chart type does not exist")
       }
+   }
+
+   clone = function() {
+      let clonedInstance = new ChartSettings(this.chartType, this.chartTitle, this.chartId);
+      clonedInstance.drSettings = JSON.parse(JSON.stringify(this.drSettings));
+      clonedInstance.temporalSettings = JSON.parse(JSON.stringify(this.temporalSettings));
+      return clonedInstance;
    }
 }
 
