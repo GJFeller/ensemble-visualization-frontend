@@ -29,7 +29,6 @@ class ChartOptions {
          try {
             let response = await fetch(process.env.REACT_APP_BACKEND_URL+"/dr-methods");
             this.#drMethodList = await response.json();
-            console.log(this.#drMethodList);
          }
          catch(err) {
             console.log(err);
@@ -39,7 +38,6 @@ class ChartOptions {
          try {
             let response = await fetch(process.env.REACT_APP_BACKEND_URL+"/variables");
             this.#ensembleVariableList = await response.json();
-            console.log(this.#ensembleVariableList);
          }
          catch(err) {
             console.log(err);
@@ -71,6 +69,7 @@ export class ChartSettings {
    #chartType = ChartType.DR;
    #chartTitle = "Title"
    #chartId = ""
+   #chartData = null;
 
    #drSettings = {
      drMethod: chartOptions.drMethodList[0],
@@ -83,10 +82,11 @@ export class ChartSettings {
      drawAreas: true,
    };
 
-   constructor(chartType = ChartType.DR, chartTitle = "Title", chartId = "") {
+   constructor(chartType = ChartType.DR, chartTitle = "Title", chartId = "", chartData = null) {
       this.#chartType = chartType;
       this.#chartTitle = chartTitle;
       this.#chartId = chartId;
+      this.#chartData = chartData;
    }
 
    get drSettings() { return this.#drSettings; }
@@ -94,12 +94,14 @@ export class ChartSettings {
    get chartType() { return this.#chartType; }
    get chartTitle() { return this.#chartTitle; }
    get chartId() { return this.#chartId; }
+   get chartData() {return this.#chartData; }
 
    set chartTitle(chartTitle) { this.#chartTitle = chartTitle; }
    set chartId(chartId) { this.#chartId = chartId; }
    set drSettings(drSettings) { this.#drSettings = drSettings; }
    set temporalSettings(temporalSettings) { this.#temporalSettings = temporalSettings; }
    set chartType(chartType) { this.#chartType = chartType; }
+   set chartData(chartData) { this.#chartData = chartData; }
 
    static getSettings() {
       switch(this.chartType) {
@@ -116,7 +118,23 @@ export class ChartSettings {
       let clonedInstance = new ChartSettings(this.chartType, this.chartTitle, this.chartId);
       clonedInstance.drSettings = JSON.parse(JSON.stringify(this.drSettings));
       clonedInstance.temporalSettings = JSON.parse(JSON.stringify(this.temporalSettings));
+      clonedInstance.chartData = JSON.parse(JSON.stringify(this.chartData))
       return clonedInstance;
+   }
+
+   getRestUrl = function() {
+      let restUrl = "/";
+      switch(this.chartType) {
+         case ChartType.DR:
+            restUrl = restUrl.concat('dimensional-reduction');
+            return restUrl.concat('?method=', this.drSettings.drMethod);
+         case ChartType.TEMPORAL:
+            return restUrl.concat('', 'temporal-evolution');
+            // TODO: Fazer a URL escolhendo a variavel
+         default:
+            throw new Error("Chart type does not exist")
+      }
+
    }
 }
 

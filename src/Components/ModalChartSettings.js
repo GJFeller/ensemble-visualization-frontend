@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import closeIcon from '../Images/close.png'
 import ChartSettingsPanel from './ChartSettingsPanel';
+import { ChartType, ChartRender, ChartSettings, chartOptions } from '../utils/ChartUtils';
 import { clone } from '../utils/utils';
 
 export default function ModalChartSettings({
@@ -8,14 +9,27 @@ export default function ModalChartSettings({
   setIsOpenModal, 
   title = "Title",
   chartSettings,
-  currentPlotData,
   restRoute
 }) {
     let currentChartSettings = chartSettings.clone();
-    // TODO: Resolver problema que o currentPlotData está vazio
-    let plotData = JSON.parse(JSON.stringify(currentPlotData));
-    const [currentRestRoute, setCurrentRestRoute] = useState(restRoute);
-    
+    const [currentRestRoute, setCurrentRestRoute] = useState(currentChartSettings.getRestUrl());
+    //ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal', currentChartSettings.chartData);
+   
+    // TODO: resolver a questão de erro para não plotar aqui os gráficos.
+    //useEffect(() => {
+    //  fetch(process.env.REACT_APP_BACKEND_URL+currentChartSettings.getRestUrl())
+    //  .then((res) => {
+    //    return res.json();
+    //  })
+    //  .then((dataResponse) => {
+    //    currentChartSettings.chartData = dataResponse;
+    //    console.log(currentChartSettings.chartData);
+    //    ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal', dataResponse);
+
+    //  });
+    //}, [currentRestRoute]);
+
+
     if(isOpen) {
         return (
             <div className='fixed flex flex-row place-content-center justify-evenly content-center left-0 top-0 size-full z-50 bg-black opacity-80'>

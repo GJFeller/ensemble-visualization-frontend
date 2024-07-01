@@ -26,7 +26,6 @@ export default function DraggableWindow({
   const [isOpenModal, setIsOpenModal] = useState(false);
   
   let modalTitle = "Chart settings for " + chartSettings.chartTitle;
-  let data = [];
 
   console.log("DR method list:");
   console.log(chartOptions.getOptions(ChartType.DR));
@@ -41,19 +40,19 @@ export default function DraggableWindow({
   }
 
   useEffect(() => {
-    fetch(process.env.REACT_APP_BACKEND_URL+restRoute)
+    fetch(process.env.REACT_APP_BACKEND_URL+chartSettings.getRestUrl())
     .then((res) => {
       return res.json();
     })
     .then((dataResponse) => {
-      data = dataResponse;
-      console.log(data);
-      ChartRender.drawChart(chartSettings.chartType, chartId, data);
+      chartSettings.chartData = dataResponse;
+      console.log(chartSettings.chartData);
+      ChartRender.drawChart(chartSettings.chartType, chartId, dataResponse);
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
         console.log(chartSettings);
-        ChartRender.drawChart(chartSettings.chartType, chartId, data);
+        ChartRender.drawChart(chartSettings.chartType, chartId, dataResponse);
       });
 
       resizeObserver.observe(resizible.current);
@@ -61,7 +60,7 @@ export default function DraggableWindow({
         resizeObserver.disconnect();
       };
     });
-  }, [restRoute, chartSettings]);
+  }, [chartSettings.getRestUrl()]);
 
   return (
     <>
@@ -88,7 +87,7 @@ export default function DraggableWindow({
             className='flex items-center flex-auto max-w-full max-h-full overflow-auto' 
             ref={container}
           >
-            <svg id={chartId}></svg>
+            <svg id={chartSettings.chartId}></svg>
           </div>
         </div>
       </Draggable>
@@ -97,8 +96,6 @@ export default function DraggableWindow({
         setIsOpenModal={() => setIsOpenModal(!isOpenModal)}
         title={modalTitle}
         chartSettings={chartSettings}
-        currentPlotData={data}
-        restRoute={restRoute}
         >
       </ModalChartSettings>
     </>
