@@ -16,24 +16,24 @@ export default function ModalChartSettings({
     //ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal', currentChartSettings.chartData);
    
     // TODO: resolver a questão de erro para não plotar aqui os gráficos.
-    //useEffect(() => {
-    //  fetch(process.env.REACT_APP_BACKEND_URL+currentChartSettings.getRestUrl())
-    //  .then((res) => {
-    //    return res.json();
-    //  })
-    //  .then((dataResponse) => {
-    //    currentChartSettings.chartData = dataResponse;
-    //    console.log(currentChartSettings.chartData);
-    //    ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal', dataResponse);
+    useEffect(() => {
+      fetch(process.env.REACT_APP_BACKEND_URL+currentChartSettings.getRestUrl())
+      .then((res) => {
+        return res.json();
+      })
+      .then((dataResponse) => {
+        currentChartSettings.chartData = dataResponse;
+        console.log(currentChartSettings.chartData);
+        ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal-'+currentChartSettings.chartId, dataResponse);
 
-    //  });
-    //}, [currentRestRoute]);
+      });
+    }, [currentRestRoute, isOpen]);
 
 
     if(isOpen) {
         return (
-            <div className='fixed flex flex-row place-content-center justify-evenly content-center left-0 top-0 size-full z-50 bg-black opacity-80'>
-                <div className='flex flex-col m-auto max-w-96 bg-slate-400 border-slate-400 opacity-100 rounded-lg'>
+            <div className='fixed flex flex-row content-center justify-stretch space-x-16 left-0 top-0 size-full z-50 bg-black opacity-80'>
+                <div className='flex flex-col m-auto place-self-center max-w-full max-h-full bg-slate-400 border-slate-400 opacity-100 rounded-lg'>
                   <div className='h-8 flex flex-row border-2 border-slate-400 border-b-black rounded-t-lg opacity-100'>
                     <div className='flex flex-row grow justify-center'>
                         <div className=''>
@@ -47,8 +47,12 @@ export default function ModalChartSettings({
                     <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 m-auto rounded' onClick={setIsOpenModal}>Salvar</button>
                   </div>
                 </div>
-                <div className='flex flex-col m-auto max-w-96'>
-                  <svg id="chart-settings-modal"></svg>
+                <div className='flex flex-col place-self-center content-center justify-center w-1/2 h-1/2 max-w-full max-h-full'>
+                  <div 
+                  id={"modal-"+currentChartSettings.chartId}
+                  className='bg-white m-auto w-11/12 h-full'>
+                    <svg id={"chart-settings-modal-"+currentChartSettings.chartId}></svg>
+                  </div>
                 </div>
             </div>
         );

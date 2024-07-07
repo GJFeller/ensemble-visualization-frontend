@@ -176,6 +176,8 @@ export class ChartRender {
      */
     static #drawTimeChart(chartId, data) {
         // Get dimensions for the plot
+        if(document.getElementById(chartId) === null)
+         return;
         const container = document.getElementById(chartId).parentNode;
         const margin = {top: 10, right: 100, bottom: 30, left: 120};
         const legendMargin = {top: 10, right: 5, bottom: 10, left: 10}
@@ -370,6 +372,9 @@ export class ChartRender {
      */
     static #drawScatterPlot(chartId, data) {
         // Get dimensions for the plot
+        if(document.getElementById(chartId) === null)
+         return;
+        console.log(document.getElementById(chartId));
         const container = document.getElementById(chartId).parentNode;
         const margin = {top: 10, right: 100, bottom: 30, left: 10};
         const legendMargin = {top: 10, right: 5, bottom: 10, left: 10}
