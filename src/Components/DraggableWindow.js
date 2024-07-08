@@ -47,12 +47,12 @@ export default function DraggableWindow({
     .then((dataResponse) => {
       chartSettings.chartData = dataResponse;
       console.log(chartSettings.chartData);
-      ChartRender.drawChart(chartSettings.chartType, chartId, dataResponse);
+      ChartRender.drawChart(chartId, chartSettings);
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
         console.log(chartSettings);
-        ChartRender.drawChart(chartSettings.chartType, chartId, dataResponse);
+        ChartRender.drawChart(chartId, chartSettings);
       });
 
       resizeObserver.observe(resizible.current);

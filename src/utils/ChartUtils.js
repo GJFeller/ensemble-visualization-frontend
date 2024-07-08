@@ -156,13 +156,13 @@ d3.selection.prototype.moveToFront = function() {
 
 export class ChartRender {
 
-    static drawChart(chartType, chartId, data) {
-       switch(chartType) {
+    static drawChart(chartId, chartSettings) {
+       switch(chartSettings.chartType) {
           case ChartType.DR:
-             this.#drawScatterPlot(chartId, data);
+             this.#drawScatterPlot(chartId, chartSettings);
              break;
           case ChartType.TEMPORAL:
-             this.#drawTimeChart(chartId, data);
+             this.#drawTimeChart(chartId, chartSettings);
              break;
           default:
              throw new Error("Chart type does not exist")
@@ -174,7 +174,8 @@ export class ChartRender {
      * @param {string} chartId 
      * @param {*} data 
      */
-    static #drawTimeChart(chartId, data) {
+    static #drawTimeChart(chartId, chartSettings) {
+        let data = chartSettings.chartData;
         // Get dimensions for the plot
         if(document.getElementById(chartId) === null)
          return;
@@ -370,7 +371,8 @@ export class ChartRender {
      * @param {string} chartId 
      * @param {*} data 
      */
-    static #drawScatterPlot(chartId, data) {
+    static #drawScatterPlot(chartId, chartSettings) {
+        let data = chartSettings.chartData;
         // Get dimensions for the plot
         if(document.getElementById(chartId) === null)
          return;

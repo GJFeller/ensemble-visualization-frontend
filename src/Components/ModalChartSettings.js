@@ -13,9 +13,11 @@ export default function ModalChartSettings({
 }) {
     let currentChartSettings = chartSettings.clone();
     const [currentRestRoute, setCurrentRestRoute] = useState(currentChartSettings.getRestUrl());
-    //ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal', currentChartSettings.chartData);
-   
-    // TODO: resolver a questão de erro para não plotar aqui os gráficos.
+
+    const changeRestRoute = () => {
+      setCurrentRestRoute(currentChartSettings.getRestUrl());
+    }
+
     useEffect(() => {
       fetch(process.env.REACT_APP_BACKEND_URL+currentChartSettings.getRestUrl())
       .then((res) => {
@@ -24,7 +26,7 @@ export default function ModalChartSettings({
       .then((dataResponse) => {
         currentChartSettings.chartData = dataResponse;
         console.log(currentChartSettings.chartData);
-        ChartRender.drawChart(currentChartSettings.chartType, 'chart-settings-modal-'+currentChartSettings.chartId, dataResponse);
+        ChartRender.drawChart('chart-settings-modal-'+currentChartSettings.chartId, chartSettings);
 
       });
     }, [currentRestRoute, isOpen]);
