@@ -1,15 +1,15 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as ChartUtils from '../utils/ChartUtils';
 
 
-export default function ChartSettingsPanel(
-    currentChartSettings = undefined
-) {
-    const [chartSettings, setChartSettings] = useState(currentChartSettings.currentChartSettings);
+export default function ChartSettingsPanel({
+    currentChartSettings,
+    changeRestRoute
+}) {
+    const [chartSettings, setChartSettings] = useState(currentChartSettings);
 
     useEffect( () => {
-        console.log("Teste");
-        setChartSettings(currentChartSettings.currentChartSettings);
+        setChartSettings(currentChartSettings);
     }, [currentChartSettings]);
 
     console.log(chartSettings);
@@ -20,11 +20,13 @@ export default function ChartSettingsPanel(
       console.log(chartSettingsCopy);
       chartSettingsCopy.drSettings.drMethod = value;
       setChartSettings(chartSettingsCopy);
+      changeRestRoute(chartSettingsCopy);
     };
 
     const onChangeConvexHull = (e) => {
         let chartSettingsCopy = { ...chartSettings }
         chartSettingsCopy.drSettings.showConvexHull = !chartSettings.drSettings.showConvexHull;
+        changeRestRoute();
         setChartSettings(chartSettings => ({
           ...chartSettingsCopy
         }));

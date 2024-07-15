@@ -11,12 +11,15 @@ export default function ModalChartSettings({
   chartSettings,
   restRoute
 }) {
-    let currentChartSettings = chartSettings.clone();
-    const [currentRestRoute, setCurrentRestRoute] = useState(currentChartSettings.getRestUrl());
+    const [currentChartSettings, setCurrentChartSettings] = useState(chartSettings.clone());
 
-    const changeRestRoute = () => {
-      setCurrentRestRoute(currentChartSettings.getRestUrl());
-    }
+    const changeRestRoute = (modifiedChartSettings) => {
+      console.log(currentChartSettings);
+      console.log(currentChartSettings.getRestUrl());
+      setCurrentChartSettings(modifiedChartSettings);
+    };
+
+    console.log(currentChartSettings);
 
     useEffect(() => {
       fetch(process.env.REACT_APP_BACKEND_URL+currentChartSettings.getRestUrl())
@@ -26,10 +29,11 @@ export default function ModalChartSettings({
       .then((dataResponse) => {
         currentChartSettings.chartData = dataResponse;
         console.log(currentChartSettings.chartData);
+        // TODO: Works only in the first rendering, the second it does not work
         ChartRender.drawChart('chart-settings-modal-'+currentChartSettings.chartId, chartSettings);
 
       });
-    }, [currentRestRoute, isOpen]);
+    }, [currentChartSettings, isOpen]);
 
 
     if(isOpen) {
@@ -45,7 +49,7 @@ export default function ModalChartSettings({
                     <button className="p-1" onClick={setIsOpenModal}><img src={closeIcon} width="8" height="8" alt="close window"/></button> 
                   </div>
                   <div className='flex flex-col bg-white rounded-b-lg opacity-100'>
-                    <ChartSettingsPanel currentChartSettings={currentChartSettings}/>
+                    <ChartSettingsPanel currentChartSettings={currentChartSettings} changeRestRoute={changeRestRoute}/>
                     <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 m-auto rounded' onClick={setIsOpenModal}>Salvar</button>
                   </div>
                 </div>
