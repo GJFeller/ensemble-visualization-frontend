@@ -9,11 +9,11 @@ export default function ModalChartSettings({
   setIsOpenModal, 
   title = "Title",
   chartSettings,
-  restRoute
+  saveChartSettings
 }) {
     const [currentChartSettings, setCurrentChartSettings] = useState(chartSettings.clone());
 
-    const changeRestRoute = (modifiedChartSettings) => {
+    const changeChartSettings = (modifiedChartSettings) => {
       console.log(currentChartSettings);
       console.log(currentChartSettings.getRestUrl());
       setCurrentChartSettings(modifiedChartSettings);
@@ -29,9 +29,7 @@ export default function ModalChartSettings({
       .then((dataResponse) => {
         currentChartSettings.chartData = dataResponse;
         console.log(currentChartSettings.chartData);
-        // TODO: Works only in the first rendering, the second it does not work
-        ChartRender.drawChart('chart-settings-modal-'+currentChartSettings.chartId, chartSettings);
-
+        ChartRender.drawChart('chart-settings-modal-'+currentChartSettings.chartId, currentChartSettings);
       });
     }, [currentChartSettings, isOpen]);
 
@@ -49,8 +47,8 @@ export default function ModalChartSettings({
                     <button className="p-1" onClick={setIsOpenModal}><img src={closeIcon} width="8" height="8" alt="close window"/></button> 
                   </div>
                   <div className='flex flex-col bg-white rounded-b-lg opacity-100'>
-                    <ChartSettingsPanel currentChartSettings={currentChartSettings} changeRestRoute={changeRestRoute}/>
-                    <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 m-auto rounded' onClick={setIsOpenModal}>Salvar</button>
+                    <ChartSettingsPanel currentChartSettings={currentChartSettings} changeChartSettings={changeChartSettings}/>
+                    <button className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 m-auto rounded' onClick={() => saveChartSettings(currentChartSettings.clone())}>Salvar</button>
                   </div>
                 </div>
                 <div className='flex flex-col place-self-center content-center justify-center w-1/2 h-1/2 max-w-full max-h-full'>

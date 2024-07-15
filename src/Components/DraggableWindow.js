@@ -31,8 +31,13 @@ export default function DraggableWindow({
   console.log(chartOptions.getOptions(ChartType.DR));
 
   const openSettings = (e) => {
-    //showChartSettings(chartSettings);
     setIsOpenModal(true);
+  }
+
+  const saveChartSettings = (modifiedChartSettings) => {
+    console.log(modifiedChartSettings);
+    setChartSettings(modifiedChartSettings);
+    setIsOpenModal(!isOpenModal);
   }
 
   const closeWindow = (e) => {
@@ -40,6 +45,7 @@ export default function DraggableWindow({
   }
 
   useEffect(() => {
+    console.log(chartSettings);
     fetch(process.env.REACT_APP_BACKEND_URL+chartSettings.getRestUrl())
     .then((res) => {
       return res.json();
@@ -47,12 +53,12 @@ export default function DraggableWindow({
     .then((dataResponse) => {
       chartSettings.chartData = dataResponse;
       console.log(chartSettings.chartData);
-      ChartRender.drawChart(chartId, chartSettings);
+      ChartRender.drawChart(chartSettings.chartId, chartSettings);
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
         console.log(chartSettings);
-        ChartRender.drawChart(chartId, chartSettings);
+        ChartRender.drawChart(chartSettings.chartId, chartSettings);
       });
 
       resizeObserver.observe(resizible.current);
@@ -60,7 +66,7 @@ export default function DraggableWindow({
         resizeObserver.disconnect();
       };
     });
-  }, [chartSettings.getRestUrl()]);
+  }, [chartSettings]);
 
   return (
     <>
@@ -96,6 +102,7 @@ export default function DraggableWindow({
         setIsOpenModal={() => setIsOpenModal(!isOpenModal)}
         title={modalTitle}
         chartSettings={chartSettings}
+        saveChartSettings={saveChartSettings}
         >
       </ModalChartSettings>
     </>

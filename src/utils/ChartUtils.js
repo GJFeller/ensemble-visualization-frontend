@@ -469,6 +469,7 @@ export class ChartRender {
            .text("a simple tooltip");
        
        let points = {};
+       if(chartSettings.drSettings.showConvexHull) {
         // Drawing the convex hull for each ensemble
         groups.forEach((element) => {
           // Creating the convex hull for each group
@@ -481,6 +482,7 @@ export class ChartRender {
              .style("fill", color(element))
              .attr("d", `M${hull.join("L")}Z`);
         });
+       }
        svg.call(d3.brush().on("start brush end", ({selection}) => {
           let value = [];
           if (selection) {

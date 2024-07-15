@@ -4,7 +4,7 @@ import * as ChartUtils from '../utils/ChartUtils';
 
 export default function ChartSettingsPanel({
     currentChartSettings,
-    changeRestRoute
+    changeChartSettings
 }) {
     const [chartSettings, setChartSettings] = useState(currentChartSettings);
 
@@ -20,16 +20,14 @@ export default function ChartSettingsPanel({
       console.log(chartSettingsCopy);
       chartSettingsCopy.drSettings.drMethod = value;
       setChartSettings(chartSettingsCopy);
-      changeRestRoute(chartSettingsCopy);
+      changeChartSettings(chartSettingsCopy);
     };
 
     const onChangeConvexHull = (e) => {
-        let chartSettingsCopy = { ...chartSettings }
-        chartSettingsCopy.drSettings.showConvexHull = !chartSettings.drSettings.showConvexHull;
-        changeRestRoute();
-        setChartSettings(chartSettings => ({
-          ...chartSettingsCopy
-        }));
+      let chartSettingsCopy = chartSettings.clone();
+      chartSettingsCopy.drSettings.showConvexHull = !chartSettings.drSettings.showConvexHull;
+      setChartSettings(chartSettingsCopy);
+      changeChartSettings(chartSettingsCopy);
     };
     const onChangeLogScale = (e) => {
 
@@ -43,7 +41,11 @@ export default function ChartSettingsPanel({
                <>
                <div>
                   <label>Dimensionality reduction technique:</label>
-                  <select className='text-sm max-w-full rounded-lg' onChange={onChangeDRSelect}>
+                  <select 
+                    className='text-sm max-w-full rounded-lg'
+                    defaultValue={chartSettings.drSettings.drMethod} 
+                    onChange={onChangeDRSelect}
+                  >
                     {ChartUtils.chartOptions.drMethodList.length > 0 && ChartUtils.chartOptions.drMethodList.map((method) => {
                         return (<option key={method} value={method}>{method}</option>)
                     })}
