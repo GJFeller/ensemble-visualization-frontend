@@ -29,8 +29,26 @@ export default function ChartSettingsPanel({
       setChartSettings(chartSettingsCopy);
       changeChartSettings(chartSettingsCopy);
     };
-    const onChangeLogScale = (e) => {
 
+    const onChangeTemporalVariable = (e) => {
+      const value = e.target.value;
+      let chartSettingsCopy = chartSettings.clone();
+      console.log(chartSettingsCopy);
+      chartSettingsCopy.temporalSettings.temporalVariable = value;
+      setChartSettings(chartSettingsCopy);
+      changeChartSettings(chartSettingsCopy);
+    };
+    const onChangeLogScale = (e) => {
+      let chartSettingsCopy = chartSettings.clone();
+      chartSettingsCopy.temporalSettings.logScale = !chartSettings.temporalSettings.logScale;
+      setChartSettings(chartSettingsCopy);
+      changeChartSettings(chartSettingsCopy);
+    };
+    const onChangeDrawAreas = (e) => {
+      let chartSettingsCopy = chartSettings.clone();
+      chartSettingsCopy.temporalSettings.drawAreas = !chartSettings.temporalSettings.drawAreas;
+      setChartSettings(chartSettingsCopy);
+      changeChartSettings(chartSettingsCopy);
     };
 
     return (
@@ -68,7 +86,11 @@ export default function ChartSettingsPanel({
                <>
                <div>
                   <label>Variable:</label>
-                  <select className='text-sm max-w-full rounded-lg'>
+                  <select
+                    className='text-sm max-w-full rounded-lg'
+                    defaultValue={chartSettings.temporalSettings.temporalVariable} 
+                    onChange={onChangeTemporalVariable}
+                  >
                     {ChartUtils.chartOptions.ensembleVariableList.length > 0 && ChartUtils.chartOptions.ensembleVariableList.map((variable) => {
                         return (<option key={variable} className='text-sm' value={variable}>{variable}</option>)
                     })}
@@ -91,7 +113,7 @@ export default function ChartSettingsPanel({
                     name="drawAreas"
                     value="drawAreas"
                     checked={chartSettings.temporalSettings.drawAreas}
-                    onChange={onChangeLogScale}
+                    onChange={onChangeDrawAreas}
                   /> Draw areas in chart
                </div>
                </>

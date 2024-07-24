@@ -129,8 +129,8 @@ export class ChartSettings {
             restUrl = restUrl.concat('dimensional-reduction');
             return restUrl.concat('?method=', this.drSettings.drMethod);
          case ChartType.TEMPORAL:
-            return restUrl.concat('', 'temporal-evolution');
-            // TODO: Fazer a URL escolhendo a variavel
+            restUrl = restUrl.concat('temporal-evolution')
+            return restUrl.concat('?variable=', this.temporalSettings.temporalVariable);
          default:
             throw new Error("Chart type does not exist")
       }
@@ -244,9 +244,14 @@ export class ChartRender {
            .attr("opacity", "1")
         
         // Add Y axis
-        const y = d3.scaleLinear()
+        let y = null;
+        if(chartSettings.temporalSettings.logScale)
+            y = d3.scaleSymlog([yMin, yMax], [plotHeight, 0]);
+        else {
+            y = d3.scaleLinear()
                     .domain([yMin, yMax])
                     .range([ plotHeight, 0]);
+        }
         svg.selectAll(chartId+"-lineYAxis")
            .remove();
         svg.append("g")
@@ -289,20 +294,22 @@ export class ChartRender {
            .attr("stroke-width", 2)
            .style("opacity", 0)
            .style('pointer-events', 'none')
-       // Drawing areas
-       groups.forEach((ensemble) => {
-          svg
-             .append("path")
-             .datum(groupsArea[ensemble])
-             .attr("fill", color(ensemble))
-             .attr("stroke", color(ensemble))
-             .attr("opacity", 0.2)
-             .attr("d", d3.area()
-               .x(function(d) { return x(d.x); })
-               .y0(function(d) { return y(d.yMin); })
-               .y1(function(d) { return y(d.yMax); })
-             );
-       });
+       if(chartSettings.temporalSettings.drawAreas) {
+         // Drawing areas
+         groups.forEach((ensemble) => {
+            svg
+               .append("path")
+               .datum(groupsArea[ensemble])
+               .attr("fill", color(ensemble))
+               .attr("stroke", color(ensemble))
+               .attr("opacity", 0.2)
+               .attr("d", d3.area()
+                 .x(function(d) { return x(d.x); })
+                 .y0(function(d) { return y(d.yMin); })
+                 .y1(function(d) { return y(d.yMax); })
+               );
+         });
+       }
        // Add the line
        groups.forEach((ensemble) => {
           for(const [simulation, points] of Object.entries(data[ensemble])) {
