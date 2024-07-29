@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChartType, ChartRender, ChartSettings, chartOptions } from '../utils/ChartUtils';
-import Modal from './ModalChartSettings';
 
 import Draggable from 'react-draggable';
 import closeIcon from '../Images/close.png'
@@ -14,7 +13,8 @@ export default function DraggableWindow({
   title = "Header Title",
   restRoute = "/",
   chartType = ChartType.DR,
-  showChartSettings = () => {}
+  selectedEnsembleList = [],
+  selectedSimulationList = []
 }) {
 
   const container = useRef(null);
@@ -22,9 +22,15 @@ export default function DraggableWindow({
   const windowBodyId = "window-body"+plotId;
   const chartId = "plot"+plotId++;
 
-  const [chartSettings, setChartSettings] = useState(new ChartSettings(chartType, title, chartId));
+  let tempChartSettings = new ChartSettings(chartType, title, chartId);
+  tempChartSettings.ensembleList = [...selectedEnsembleList];
+  tempChartSettings.simulationList = [...selectedSimulationList];
+  const [chartSettings, setChartSettings] = useState(tempChartSettings);
   const [isOpenModal, setIsOpenModal] = useState(false);
-  
+
+  console.log("Chart settings:");
+  console.log(chartSettings);
+
   let modalTitle = "Chart settings for " + chartSettings.chartTitle;
 
   console.log("DR method list:");

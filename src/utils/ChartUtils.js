@@ -82,6 +82,9 @@ export class ChartSettings {
      drawAreas: true,
    };
 
+   #ensembleList = [];
+   #simulationList = [];
+
    constructor(chartType = ChartType.DR, chartTitle = "Title", chartId = "", chartData = null) {
       this.#chartType = chartType;
       this.#chartTitle = chartTitle;
@@ -94,7 +97,9 @@ export class ChartSettings {
    get chartType() { return this.#chartType; }
    get chartTitle() { return this.#chartTitle; }
    get chartId() { return this.#chartId; }
-   get chartData() {return this.#chartData; }
+   get chartData() { return this.#chartData; }
+   get ensembleList() { return this.#ensembleList; }
+   get simulationList() { return this.#simulationList; }
 
    set chartTitle(chartTitle) { this.#chartTitle = chartTitle; }
    set chartId(chartId) { this.#chartId = chartId; }
@@ -102,6 +107,8 @@ export class ChartSettings {
    set temporalSettings(temporalSettings) { this.#temporalSettings = temporalSettings; }
    set chartType(chartType) { this.#chartType = chartType; }
    set chartData(chartData) { this.#chartData = chartData; }
+   set ensembleList(ensembleList) { this.#ensembleList = ensembleList; }
+   set simulationList(simulationList) { this.#simulationList = simulationList; }
 
    static getSettings() {
       switch(this.chartType) {
@@ -127,10 +134,20 @@ export class ChartSettings {
       switch(this.chartType) {
          case ChartType.DR:
             restUrl = restUrl.concat('dimensional-reduction');
-            return restUrl.concat('?method=', this.drSettings.drMethod);
+            restUrl = restUrl.concat('?method=', this.drSettings.drMethod);
+            for (const ensemble of this.ensembleList)
+               restUrl = restUrl.concat('&ensemble=', ensemble);
+            for (const simulation of this.simulationList)
+               restUrl = restUrl.concat('&simulation=', simulation)
+            return restUrl;
          case ChartType.TEMPORAL:
             restUrl = restUrl.concat('temporal-evolution')
-            return restUrl.concat('?variable=', this.temporalSettings.temporalVariable);
+            restUrl = restUrl.concat('?variable=', this.temporalSettings.temporalVariable);
+            for (const ensemble of this.ensembleList)
+               restUrl = restUrl.concat('&ensemble=', ensemble);
+            for (const simulation of this.simulationList)
+               restUrl = restUrl.concat('&simulation=', simulation)
+            return restUrl;
          default:
             throw new Error("Chart type does not exist")
       }
@@ -477,18 +494,26 @@ export class ChartRender {
        
        let points = {};
        if(chartSettings.drSettings.showConvexHull) {
-        // Drawing the convex hull for each ensemble
-        groups.forEach((element) => {
-          // Creating the convex hull for each group
-          var pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
-          var hull = d3.polygonHull(pxPoint);
-          svg.append('g')
-             .append('path')
-             .style("stroke", color(element))
-             .style("fill-opacity", "0.3")
-             .style("fill", color(element))
-             .attr("d", `M${hull.join("L")}Z`);
-        });
+         // Checking if all ensembles have at least 3 simulations
+         let canConvexHull = true;
+         for(const ensemble of groups) {
+            if(convertedData[ensemble].length < 3)
+               canConvexHull = false;
+         }
+         if(canConvexHull) {
+            // Drawing the convex hull for each ensemble
+            groups.forEach((element) => {
+              // Creating the convex hull for each group
+              var pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
+              var hull = d3.polygonHull(pxPoint);
+              svg.append('g')
+                 .append('path')
+                 .style("stroke", color(element))
+                 .style("fill-opacity", "0.3")
+                 .style("fill", color(element))
+                 .attr("d", `M${hull.join("L")}Z`);
+            });
+         }
        }
        svg.call(d3.brush().on("start brush end", ({selection}) => {
           let value = [];

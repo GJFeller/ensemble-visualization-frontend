@@ -47,7 +47,7 @@ export default function EnsembleSideBar({
             <div className='border-1 rounded-md m-1 bg-gray-200 border-gray-200'>
               <TreeView treeData={treeData}/>
             </div>
-            <button onClick={onCreateChart} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
+            <button onClick={() => onCreateChart(treeData)} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
         </>
   );
 }

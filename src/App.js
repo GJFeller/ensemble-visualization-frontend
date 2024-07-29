@@ -1,5 +1,4 @@
 import './App.css';
-import ChartSideBar from './Layout/ChartSideBar/ChartSideBar';
 import EnsembleSideBar from './Layout/EnsembleSideBar/EnsembleSideBar';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
@@ -11,10 +10,23 @@ let vizId = 0;
 
 function App() {
   const [visualizationList, setVisualizationList] = useState([]);
-  const [currentChartSettings, setCurrentChartSettings] = useState(undefined);
 
-  const createChart = () => {
+  const createChart = (treeData = []) => {
     console.log("App.createChart()");
+    console.log(treeData);
+    let selectedEnsembleList = []
+    let selectedSimulationList = []
+    for (const ensembleNode of treeData) {
+      if(ensembleNode.isChecked) {
+        selectedEnsembleList.push(ensembleNode.label);
+        for (const simulationNode of ensembleNode.children) {
+          if(simulationNode.isChecked) 
+            selectedSimulationList.push(simulationNode.label);
+        }
+      }
+    }
+    console.log(selectedEnsembleList);
+    console.log(selectedSimulationList);
     setVisualizationList(
       [
         ...visualizationList,
@@ -22,21 +34,19 @@ function App() {
           key={"viz-"+vizId++} 
           restRoute={"/dimensional-reduction?method=PCA"}
           chartType={ChartUtils.ChartType.DR}
-          showChartSettings={showChartSettings}
+          selectedEnsembleList={selectedEnsembleList}
+          selectedSimulationList={selectedSimulationList}
         />, 
         <DraggableWindow 
           key={"viz-"+vizId++} 
           restRoute={"/temporal-evolution"} 
           chartType={ChartUtils.ChartType.TEMPORAL}
-          showChartSettings={showChartSettings}
+          selectedEnsembleList={selectedEnsembleList}
+          selectedSimulationList={selectedSimulationList}
         />
       ]
     )
   };
-
-  const showChartSettings = (chartSettings) => {
-    setCurrentChartSettings(chartSettings);
-  }
 
   return (
     <div className="bg-slate-400">
