@@ -11,9 +11,15 @@ let vizId = 0;
 function App() {
   const [visualizationList, setVisualizationList] = useState([]);
 
+  const closeWindow = (id) => {
+    console.log(id);
+    console.log(visualizationList);
+    const newVisualizationList = visualizationList.filter((el) => el.id !== id);
+    console.log(newVisualizationList);
+    setVisualizationList(newVisualizationList);
+  }
+
   const createChart = (treeData = []) => {
-    console.log("App.createChart()");
-    console.log(treeData);
     let selectedEnsembleList = []
     let selectedSimulationList = []
     for (const ensembleNode of treeData) {
@@ -25,25 +31,33 @@ function App() {
         }
       }
     }
-    console.log(selectedEnsembleList);
-    console.log(selectedSimulationList);
     setVisualizationList(
       [
         ...visualizationList,
-        <DraggableWindow 
-          key={"viz-"+vizId++} 
-          restRoute={"/dimensional-reduction?method=PCA"}
-          chartType={ChartUtils.ChartType.DR}
-          selectedEnsembleList={selectedEnsembleList}
-          selectedSimulationList={selectedSimulationList}
-        />, 
-        <DraggableWindow 
-          key={"viz-"+vizId++} 
-          restRoute={"/temporal-evolution"} 
-          chartType={ChartUtils.ChartType.TEMPORAL}
-          selectedEnsembleList={selectedEnsembleList}
-          selectedSimulationList={selectedSimulationList}
-        />
+        {
+          id: "viz-"+vizId,
+          component:
+             <DraggableWindow 
+               key={"viz-"+vizId}
+               id={"viz-"+vizId++}
+               chartType={ChartUtils.ChartType.DR}
+               selectedEnsembleList={selectedEnsembleList}
+               selectedSimulationList={selectedSimulationList}
+               closeWindow={closeWindow}
+             />, 
+        },
+        {
+          id: "viz-"+vizId,
+          component:
+            <DraggableWindow 
+              key={"viz-"+vizId} 
+              id={"viz-"+vizId++}
+              chartType={ChartUtils.ChartType.TEMPORAL}
+              selectedEnsembleList={selectedEnsembleList}
+              selectedSimulationList={selectedSimulationList}
+              closeWindow={closeWindow}
+            />,
+        }
       ]
     )
   };
@@ -63,7 +77,7 @@ function App() {
         <PanelResizeHandle className="w-1 bg-black" />
         <Panel>
           <VisualizationMain>
-            {visualizationList}
+            {visualizationList.map((element) => element.component)}
           </VisualizationMain>
         </Panel>
       </PanelGroup>

@@ -14,12 +14,8 @@ export default function ModalChartSettings({
     const [currentChartSettings, setCurrentChartSettings] = useState(chartSettings.clone());
 
     const changeChartSettings = (modifiedChartSettings) => {
-      console.log(currentChartSettings);
-      console.log(currentChartSettings.getRestUrl());
       setCurrentChartSettings(modifiedChartSettings);
     };
-
-    console.log(currentChartSettings);
 
     useEffect(() => {
       fetch(process.env.REACT_APP_BACKEND_URL+currentChartSettings.getRestUrl())
@@ -28,7 +24,6 @@ export default function ModalChartSettings({
       })
       .then((dataResponse) => {
         currentChartSettings.chartData = dataResponse;
-        console.log(currentChartSettings.chartData);
         ChartRender.drawChart('chart-settings-modal-'+currentChartSettings.chartId, currentChartSettings);
       });
     }, [currentChartSettings, isOpen]);

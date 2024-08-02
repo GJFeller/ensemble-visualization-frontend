@@ -13,7 +13,6 @@ export default function EnsembleSideBar({
       return res.json();
     })
     .then((data) => {
-      console.log(data);
       var keyIdx = 1;
       var tree = [];
       for(var ensemble in data) {
@@ -33,7 +32,6 @@ export default function EnsembleSideBar({
         }
         tree.push(ensembleNode);
       }
-      console.log(tree);
       setTreeData(tree);
     })
   }, [restRoute]);

@@ -11,10 +11,11 @@ let plotId = 0;
 
 export default function DraggableWindow({
   title = "Header Title",
-  restRoute = "/",
   chartType = ChartType.DR,
   selectedEnsembleList = [],
-  selectedSimulationList = []
+  selectedSimulationList = [],
+  id = "",
+  closeWindow
 }) {
 
   const container = useRef(null);
@@ -28,42 +29,32 @@ export default function DraggableWindow({
   const [chartSettings, setChartSettings] = useState(tempChartSettings);
   const [isOpenModal, setIsOpenModal] = useState(false);
 
-  console.log("Chart settings:");
-  console.log(chartSettings);
-
   let modalTitle = "Chart settings for " + chartSettings.chartTitle;
-
-  console.log("DR method list:");
-  console.log(chartOptions.getOptions(ChartType.DR));
 
   const openSettings = (e) => {
     setIsOpenModal(true);
   }
 
   const saveChartSettings = (modifiedChartSettings) => {
-    console.log(modifiedChartSettings);
     setChartSettings(modifiedChartSettings);
     setIsOpenModal(!isOpenModal);
   }
 
-  const closeWindow = (e) => {
-    console.log("Clicked to close window:", chartId);
+  const closeWindowPressed = (e) => {
+    closeWindow(resizible.current.id);
   }
 
   useEffect(() => {
-    console.log(chartSettings);
     fetch(process.env.REACT_APP_BACKEND_URL+chartSettings.getRestUrl())
     .then((res) => {
       return res.json();
     })
     .then((dataResponse) => {
       chartSettings.chartData = dataResponse;
-      console.log(chartSettings.chartData);
       ChartRender.drawChart(chartSettings.chartId, chartSettings);
 
       // Create a new ResizeObserver instance
       const resizeObserver = new ResizeObserver(entries => {
-        console.log(chartSettings);
         ChartRender.drawChart(chartSettings.chartId, chartSettings);
       });
 
@@ -82,7 +73,7 @@ export default function DraggableWindow({
         position={null}
         scale={1}
       >
-        <div ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
+        <div id={id} ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
           <div className='handle justify-items-stretch'>
             <div id="header" className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded">
               <div className="grow place-self-center">
@@ -90,7 +81,7 @@ export default function DraggableWindow({
               </div>
               <div className="place-self-center flex justify-end space-x-2">
                 <button className="border-2 border-black rounded-lg p-1" onClick={openSettings}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
-                <button className="border-2 border-black rounded-lg p-1" onClick={closeWindow}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
+                <button className="border-2 border-black rounded-lg p-1" onClick={closeWindowPressed}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
               </div>
             </div>
           </div>

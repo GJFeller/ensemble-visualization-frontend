@@ -213,7 +213,7 @@ export class ChartRender {
             groups.push(item);
             groupsAreaTemp = {};
             groupsArea[item] = [];
-            //console.log(data[item]);
+            //le.log(data[item]);
             for(const [key, points] of Object.entries(data[item])) {
                 // eslint-disable-next-line no-loop-func
                 points.forEach((point) => {
@@ -238,7 +238,6 @@ export class ChartRender {
                 groupsArea[item].push(areaPoint);
             }
         };
-        //console.log(groupsArea);
         
         // Setting dimensions and margin for the plot
         d3.select("#"+chartId).selectAll("g").remove();
@@ -347,7 +346,6 @@ export class ChartRender {
                   const bisectionIndex = yearBisector(data[ensemble][simulation], year);
                   const hoveredIndexData = data[ensemble][simulation][bisectionIndex]
                   //const hoveredIndexData = data[ensemble][simulation][Math.max(0,bisectionIndex - 1)]
-                  console.log(simulation + ": " +hoveredIndexData)
     
                   // Update Image
                   tooltipDot.style('opacity', 1)
@@ -400,7 +398,6 @@ export class ChartRender {
         // Get dimensions for the plot
         if(document.getElementById(chartId) === null)
          return;
-        console.log(document.getElementById(chartId));
         const container = document.getElementById(chartId).parentNode;
         const margin = {top: 10, right: 100, bottom: 30, left: 10};
         const legendMargin = {top: 10, right: 5, bottom: 10, left: 10}
@@ -425,7 +422,6 @@ export class ChartRender {
             groups.push(item);
             // eslint-disable-next-line no-loop-func
             convertedData[item].forEach((simulation) => {
-                //console.log(point);
                 xMax = Math.max(xMax, simulation.x);
                 xMin = Math.min(xMin, simulation.x);
                 yMax = Math.max(yMax, simulation.y);
