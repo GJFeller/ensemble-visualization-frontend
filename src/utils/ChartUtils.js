@@ -85,11 +85,15 @@ export class ChartSettings {
    #ensembleList = [];
    #simulationList = [];
 
-   constructor(chartType = ChartType.DR, chartTitle = "Title", chartId = "", chartData = null) {
+   #parentChartSettings = null;
+   #childrenChartSettings = [];
+
+   constructor(chartType = ChartType.DR, chartTitle = "Title", chartId = "", chartData = null, parentChartSettings = null) {
       this.#chartType = chartType;
       this.#chartTitle = chartTitle;
       this.#chartId = chartId;
       this.#chartData = chartData;
+      this.#parentChartSettings = parentChartSettings;
    }
 
    get drSettings() { return this.#drSettings; }
@@ -100,6 +104,8 @@ export class ChartSettings {
    get chartData() { return this.#chartData; }
    get ensembleList() { return this.#ensembleList; }
    get simulationList() { return this.#simulationList; }
+   get parentChartSettings() { return this.#parentChartSettings; }
+   get childrenChartSettings() { return this.#childrenChartSettings; }
 
    set chartTitle(chartTitle) { this.#chartTitle = chartTitle; }
    set chartId(chartId) { this.#chartId = chartId; }
@@ -109,6 +115,8 @@ export class ChartSettings {
    set chartData(chartData) { this.#chartData = chartData; }
    set ensembleList(ensembleList) { this.#ensembleList = ensembleList; }
    set simulationList(simulationList) { this.#simulationList = simulationList; }
+   set parentChartSettings(parentChartSettings) { this.#parentChartSettings = parentChartSettings; }
+   set childrenChartSettings(childrenChartSettings) { this.#childrenChartSettings = childrenChartSettings; }
 
    static getSettings() {
       switch(this.chartType) {
@@ -162,6 +170,13 @@ export class ChartType {
 
    static get DR() { return this.#_DR; }
    static get TEMPORAL() { return this.#_TEMPORAL; }
+
+   static get chartTypeList() {
+      const chartTypeList = []
+      chartTypeList.push("Dimensional Reduction");
+      chartTypeList.push("Temporal");
+      return chartTypeList;
+   }
 
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import TreeView from '../../Components/TreeView';
 import Accordion from '../../Components/Accordion';
+import { ChartType } from '../../utils/ChartUtils';
 
 export default function EnsembleSideBar({
   onCreateChart = () => {},
@@ -44,6 +45,21 @@ export default function EnsembleSideBar({
             </div>
             <div className='border-1 rounded-md m-1 bg-gray-200 border-gray-200'>
               <TreeView treeData={treeData}/>
+            </div>
+            <div className='border-1 rounded-md m-1 bg-gray-200 border-gray-200'>
+              <h1>Select chart type</h1>
+              <ul>
+                {ChartType.chartTypeList.map((chartType, index) => {
+                  return (
+                    <>
+                      <li key={index}>
+                        <input type="checkbox" id={"checkbox-"+chartType}/> 
+                        <label htmlFor={"checkbox-"+chartType}>{chartType}</label>
+                      </li>
+                    </>
+                  );
+                })}
+              </ul>
             </div>
             <button onClick={() => onCreateChart(treeData)} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
         </>
