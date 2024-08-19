@@ -19,7 +19,7 @@ function App() {
     setVisualizationList(newVisualizationList);
   }
 
-  const createChart = (treeData = []) => {
+  const createChart = (chartType = [], treeData = []) => {
     let selectedEnsembleList = []
     let selectedSimulationList = []
     for (const ensembleNode of treeData) {
@@ -31,35 +31,28 @@ function App() {
         }
       }
     }
-    setVisualizationList(
-      [
-        ...visualizationList,
+    const newChartList = []
+    for(const newChart of chartType) {
+      newChartList.push(
         {
           id: "viz-"+vizId,
           component:
              <DraggableWindow 
                key={"viz-"+vizId}
                id={"viz-"+vizId++}
-               chartType={ChartUtils.ChartType.DR}
+               chartType={newChart}
                selectedEnsembleList={selectedEnsembleList}
                selectedSimulationList={selectedSimulationList}
                closeWindow={closeWindow}
              />, 
-        },
-        {
-          id: "viz-"+vizId,
-          component:
-            <DraggableWindow 
-              key={"viz-"+vizId} 
-              id={"viz-"+vizId++}
-              chartType={ChartUtils.ChartType.TEMPORAL}
-              selectedEnsembleList={selectedEnsembleList}
-              selectedSimulationList={selectedSimulationList}
-              closeWindow={closeWindow}
-            />,
-        }
+        })
+    }
+    setVisualizationList(
+      [
+        ...visualizationList,
+        ...newChartList
       ]
-    )
+    );
   };
 
   return (

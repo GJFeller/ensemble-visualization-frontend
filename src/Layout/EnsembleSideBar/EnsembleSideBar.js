@@ -3,11 +3,15 @@ import TreeView from '../../Components/TreeView';
 import Accordion from '../../Components/Accordion';
 import { ChartType } from '../../utils/ChartUtils';
 
+let chartTypeIdxKey = 0;
+
 export default function EnsembleSideBar({
   onCreateChart = () => {},
   restRoute = "/list-ensembles"
 }) {
   const [treeData, setTreeData] = useState([]);
+  const [selectedChartTypes, setSelectedChartTypes] = useState([]);
+
   useEffect(() => {
     fetch(process.env.REACT_APP_BACKEND_URL+restRoute)
     .then((res) => {
@@ -36,6 +40,23 @@ export default function EnsembleSideBar({
       setTreeData(tree);
     })
   }, [restRoute]);
+
+  const onCheckboxChange = (e) => {
+    const selectedType = ChartType.fromChartTypeString(e.target.id.replace('checkbox-', ''));
+    //var currentSelectedChartTypes = [...selectedChartTypes];
+    if(selectedChartTypes.includes(selectedType)) {
+      setSelectedChartTypes(oldValues => {
+        return oldValues.filter(chartType => chartType !== selectedType);  
+      })
+    }
+    else {
+      setSelectedChartTypes([
+        ...selectedChartTypes,
+        selectedType
+      ])
+    }
+  };
+
   return (
         <>
             <div className='border-1 rounded-md m-1'>
@@ -49,11 +70,16 @@ export default function EnsembleSideBar({
             <div className='border-1 rounded-md m-1 bg-gray-200 border-gray-200'>
               <h1>Select chart type</h1>
               <ul>
-                {ChartType.chartTypeList.map((chartType, index) => {
+                {ChartType.chartTypeList.map((chartType) => {
                   return (
                     <>
-                      <li key={index}>
-                        <input type="checkbox" id={"checkbox-"+chartType}/> 
+                      <li key={'chartType'-chartTypeIdxKey++}>
+                        <input 
+                          type="checkbox" 
+                          id={"checkbox-"+chartType}
+                          checked={selectedChartTypes.includes(ChartType.fromChartTypeString(chartType))}
+                          onChange={onCheckboxChange}
+                        /> 
                         <label htmlFor={"checkbox-"+chartType}>{chartType}</label>
                       </li>
                     </>
@@ -61,7 +87,7 @@ export default function EnsembleSideBar({
                 })}
               </ul>
             </div>
-            <button onClick={() => onCreateChart(treeData)} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
+            <button onClick={() => onCreateChart(selectedChartTypes, treeData)} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create chart</button>
         </>
   );
 }

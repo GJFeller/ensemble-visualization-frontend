@@ -157,7 +157,7 @@ export class ChartSettings {
                restUrl = restUrl.concat('&simulation=', simulation)
             return restUrl;
          default:
-            throw new Error("Chart type does not exist")
+            throw new Error("Chart type does not exist");
       }
 
    }
@@ -170,6 +170,14 @@ export class ChartType {
 
    static get DR() { return this.#_DR; }
    static get TEMPORAL() { return this.#_TEMPORAL; }
+
+   static fromChartTypeString(chartTypeString) {
+      if(chartTypeString === "Dimensional Reduction")
+         return this.DR;
+      if(chartTypeString === "Temporal")
+         return this.TEMPORAL;
+      throw new Error("Chart type does not exist");
+   }
 
    static get chartTypeList() {
       const chartTypeList = []
