@@ -1,58 +1,66 @@
-import './App.css';
-import EnsembleSideBar from './Layout/EnsembleSideBar/EnsembleSideBar';
+import "./App.css";
+import EnsembleSideBar from "./Layout/EnsembleSideBar/EnsembleSideBar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import VisualizationMain from './Layout/VisualizationMain/VisualizationMain';
-import DraggableWindow from './Components/DraggableWindow';
-import { useState } from 'react';
-import * as ChartUtils from './utils/ChartUtils';
-
-let vizId = 0;
+import VisualizationMain from "./Layout/VisualizationMain/VisualizationMain";
+import DraggableWindow from "./Components/DraggableWindow";
+import { useState } from "react";
+import * as ChartUtils from "./utils/ChartUtils";
 
 function App() {
-  const [visualizationList, setVisualizationList] = useState([]);
+  const [visualizationTreeRootList, setVisualizationList] = useState([]);
 
   const closeWindow = (id) => {
     console.log(id);
-    console.log(visualizationList);
-    const newVisualizationList = visualizationList.filter((el) => el.id !== id);
-    console.log(newVisualizationList);
-    setVisualizationList(newVisualizationList);
-  }
+    console.log(visualizationTreeRootList);
+    const newVisualizationTreeRootList = visualizationTreeRootList.filter(
+      (el) => el.id !== id,
+    );
+    console.log(newVisualizationTreeRootList);
+    setVisualizationList(newVisualizationTreeRootList);
+  };
 
   const createChart = (chartType = [], treeData = []) => {
-    let selectedEnsembleList = []
-    let selectedSimulationList = []
+    let selectedEnsembleList = [];
+    let selectedSimulationList = [];
     for (const ensembleNode of treeData) {
-      if(ensembleNode.isChecked) {
+      if (ensembleNode.isChecked) {
         selectedEnsembleList.push(ensembleNode.label);
         for (const simulationNode of ensembleNode.children) {
-          if(simulationNode.isChecked) 
+          if (simulationNode.isChecked)
             selectedSimulationList.push(simulationNode.label);
         }
       }
     }
-    const newChartList = []
-    for(const newChart of chartType) {
-      newChartList.push(
-        {
-          id: "viz-"+vizId,
-          component:
-             <DraggableWindow 
-               key={"viz-"+vizId}
-               id={"viz-"+vizId++}
-               chartType={newChart}
-               selectedEnsembleList={selectedEnsembleList}
-               selectedSimulationList={selectedSimulationList}
-               closeWindow={closeWindow}
-             />, 
-        })
+    const newChartTreeRootList = [];
+    for (const newChart of chartType) {
+      let chartSettings = new ChartUtils.ChartSettings(
+        newChart,
+        "Header Title",
+        "",
+      );
+
+      chartSettings.ensembleList = [...selectedEnsembleList];
+      chartSettings.simulationList = [...selectedSimulationList];
+
+      newChartTreeRootList.push(chartSettings);
+      //newChartTreeRootList.push(
+      //  {
+      //    id: "viz-"+vizId,
+      //    component:
+      //       <DraggableWindow
+      //         key={"viz-"+vizId}
+      //         id={"viz-"+vizId++}
+      //         chartType={newChart}
+      //         selectedEnsembleList={selectedEnsembleList}
+      //         selectedSimulationList={selectedSimulationList}
+      //         closeWindow={closeWindow}
+      //       />,
+      //  })
     }
-    setVisualizationList(
-      [
-        ...visualizationList,
-        ...newChartList
-      ]
-    );
+    setVisualizationList([
+      ...visualizationTreeRootList,
+      ...newChartTreeRootList,
+    ]);
   };
 
   return (
@@ -60,22 +68,16 @@ function App() {
       <PanelGroup autoSaveId="example" direction="horizontal">
         <Panel minSize={20} maxSize={20}>
           <div className="min-h-screen bg-slate-400">
-            <EnsembleSideBar 
-              onCreateChart={createChart}
-            >
-
-            </EnsembleSideBar>
+            <EnsembleSideBar onCreateChart={createChart}></EnsembleSideBar>
           </div>
         </Panel>
         <PanelResizeHandle className="w-1 bg-black" />
         <Panel>
-          <VisualizationMain>
-            {visualizationList.map((element) => element.component)}
-          </VisualizationMain>
+          <VisualizationMain vizTreeRootList={visualizationTreeRootList} />
         </Panel>
       </PanelGroup>
     </div>
-  )
+  );
 }
 
 export default App;

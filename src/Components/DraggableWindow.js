@@ -1,112 +1,146 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ChartType, ChartRender, ChartSettings, chartOptions } from '../utils/ChartUtils';
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ChartType,
+  ChartRender,
+  ChartSettings,
+  chartOptions,
+} from "../utils/ChartUtils";
 
-import Draggable from 'react-draggable';
-import closeIcon from '../Images/close.png'
-import optionsIcon from '../Images/options.png'
-import ModalChartSettings from './ModalChartSettings';
+import Draggable from "react-draggable";
+import closeIcon from "../Images/close.png";
+import optionsIcon from "../Images/options.png";
+import ModalChartSettings from "./ModalChartSettings";
 
-let plotId = 0;
-
+var plotId = 0;
 
 export default function DraggableWindow({
-  title = "Header Title",
-  chartType = ChartType.DR,
-  selectedEnsembleList = [],
-  selectedSimulationList = [],
   id = "",
-  closeWindow
+  chartSettings,
+  closeWindow,
 }) {
-
   const container = useRef(null);
   const resizible = useRef(null);
-  const windowBodyId = "window-body"+plotId;
-  const chartId = "plot"+plotId++;
+  const windowBodyId = "window-body" + plotId;
+  const chartId = "plot" + plotId++;
 
-  let tempChartSettings = new ChartSettings(chartType, title, chartId);
-  tempChartSettings.ensembleList = [...selectedEnsembleList];
-  tempChartSettings.simulationList = [...selectedSimulationList];
-  const [chartSettings, setChartSettings] = useState(tempChartSettings);
+  console.log(chartSettings);
+  chartSettings.chartId = chartId;
+  const [currentChartSettings, setCurrentChartSettings] =
+    useState(chartSettings);
   const [isOpenModal, setIsOpenModal] = useState(false);
 
-  let modalTitle = "Chart settings for " + chartSettings.chartTitle;
+  let modalTitle = "Chart settings for " + currentChartSettings.chartTitle;
 
   const openSettings = (e) => {
     setIsOpenModal(true);
-  }
+  };
 
   const saveChartSettings = (modifiedChartSettings) => {
-    setChartSettings(modifiedChartSettings);
+    setCurrentChartSettings(modifiedChartSettings);
     setIsOpenModal(!isOpenModal);
-  }
+  };
 
   const closeWindowPressed = (e) => {
     closeWindow(resizible.current.id);
-  }
+  };
 
   useEffect(() => {
-    fetch(process.env.REACT_APP_BACKEND_URL+chartSettings.getRestUrl())
-    .then((res) => {
-      return res.json();
-    })
-    .then((dataResponse) => {
-      chartSettings.chartData = dataResponse;
-      ChartRender.drawChart(chartSettings.chartId, chartSettings);
+    fetch(process.env.REACT_APP_BACKEND_URL + currentChartSettings.getRestUrl())
+      .then((res) => {
+        return res.json();
+      })
+      .then((dataResponse) => {
+        currentChartSettings.chartData = dataResponse;
+        ChartRender.drawChart(
+          currentChartSettings.chartId,
+          currentChartSettings,
+        );
 
-      // Create a new ResizeObserver instance
-      const resizeObserver = new ResizeObserver(entries => {
-        ChartRender.drawChart(chartSettings.chartId, chartSettings);
+        // Create a new ResizeObserver instance
+        const resizeObserver = new ResizeObserver((entries) => {
+          ChartRender.drawChart(
+            currentChartSettings.chartId,
+            currentChartSettings,
+          );
+        });
+
+        resizeObserver.observe(resizible.current);
+        return () => {
+          resizeObserver.disconnect();
+        };
       });
-
-      resizeObserver.observe(resizible.current);
-      return () => {
-        resizeObserver.disconnect();
-      };
-    });
-  }, [chartSettings]);
+  }, [currentChartSettings]);
 
   return (
     <>
       <Draggable
-        handle='.handle' 
-        defaultPosition={{x: 0, y: 0}}
+        handle=".handle"
+        defaultPosition={{ x: 0, y: 0 }}
         position={null}
         scale={1}
       >
-        <div id={id} ref={resizible} className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize">
-          <div className='handle justify-items-stretch'>
-            <div id="header" className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded">
+        <div
+          id={id}
+          ref={resizible}
+          className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize"
+        >
+          <div className="handle justify-items-stretch">
+            <div
+              id="header"
+              className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded"
+            >
               <div className="grow place-self-center">
-                <h2 className="text-center">{chartSettings.chartTitle}</h2>
+                <h2 className="text-center">
+                  {currentChartSettings.chartTitle}
+                </h2>
               </div>
               <div className="place-self-center flex justify-end space-x-2">
-                <button className="border-2 border-black rounded-lg p-1" onClick={openSettings}><img src={optionsIcon} width="24" height="24" alt="close window"/></button> 
-                <button className="border-2 border-black rounded-lg p-1" onClick={closeWindowPressed}><img src={closeIcon} width="24" height="24" alt="close window"/></button> 
+                <button
+                  className="border-2 border-black rounded-lg p-1"
+                  onClick={openSettings}
+                >
+                  <img
+                    src={optionsIcon}
+                    width="24"
+                    height="24"
+                    alt="close window"
+                  />
+                </button>
+                <button
+                  className="border-2 border-black rounded-lg p-1"
+                  onClick={closeWindowPressed}
+                >
+                  <img
+                    src={closeIcon}
+                    width="24"
+                    height="24"
+                    alt="close window"
+                  />
+                </button>
               </div>
             </div>
           </div>
-          <div 
+          <div
             id={windowBodyId}
-            className='flex items-center flex-auto max-w-full max-h-full overflow-auto' 
+            className="flex items-center flex-auto max-w-full max-h-full overflow-auto"
             ref={container}
           >
-            <svg id={chartSettings.chartId}></svg>
+            <svg id={currentChartSettings.chartId}></svg>
           </div>
         </div>
       </Draggable>
-      <ModalChartSettings 
-        isOpen={isOpenModal} 
+      <ModalChartSettings
+        isOpen={isOpenModal}
         setIsOpenModal={() => setIsOpenModal(!isOpenModal)}
         title={modalTitle}
-        chartSettings={chartSettings}
+        chartSettings={currentChartSettings}
         saveChartSettings={saveChartSettings}
-        >
-      </ModalChartSettings>
+      ></ModalChartSettings>
     </>
   );
 }
 
-//export type DraggableWindowProps = { 
+//export type DraggableWindowProps = {
 //  windowTitle?: string
 // };
 //
@@ -149,12 +183,12 @@ export default function DraggableWindow({
 //            .attr("height", (d, i) => d * 10)
 //            .attr("fill", "green");
 //  }
-//  
+//
 //  render() {
 //      const { windowTitle = "Header Title" } = this.props;
 //      return(
 //        <Draggable
-//          handle='.handle' 
+//          handle='.handle'
 //          defaultPosition={{x: 0, y: 0}}
 //          position={null}
 //          scale={1}
@@ -166,13 +200,13 @@ export default function DraggableWindow({
 //            <div className='handle'>
 //              <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
 //                <div>
-//                  
+//
 //                </div>
 //                <div className="content-center">
 //                  <h2 className="text-center">{windowTitle}</h2>
 //                </div>
 //                <div className="">
-//                  
+//
 //                </div>
 //              </div>
 //            </div>
