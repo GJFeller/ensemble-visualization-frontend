@@ -13,7 +13,7 @@ function App() {
     console.log(id);
     console.log(visualizationTreeRootList);
     const newVisualizationTreeRootList = visualizationTreeRootList.filter(
-      (el) => el.id !== id,
+      (el) => el.chartId !== id,
     );
     console.log(newVisualizationTreeRootList);
     setVisualizationList(newVisualizationTreeRootList);
@@ -73,7 +73,10 @@ function App() {
         </Panel>
         <PanelResizeHandle className="w-1 bg-black" />
         <Panel>
-          <VisualizationMain vizTreeRootList={visualizationTreeRootList} />
+          <VisualizationMain
+            vizTreeRootList={visualizationTreeRootList}
+            closeWindow={closeWindow}
+          />
         </Panel>
       </PanelGroup>
     </div>

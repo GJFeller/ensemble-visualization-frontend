@@ -3,17 +3,9 @@ import DraggableWindow from "../../Components/DraggableWindow";
 
 var vizId = 0;
 
-export default function VisualizationMain({ vizTreeRootList }) {
+export default function VisualizationMain({ vizTreeRootList, closeWindow }) {
   console.log(vizTreeRootList);
 
-  //    return(
-  //      <div id="vis-main" className="min-h-screen bg-white">
-  //        <DraggableWindow
-  //          windowTitle='Titulo 1'>
-  //          <div>I can now be moved around!</div>
-  //        </DraggableWindow>
-  //      </div>
-  //    )
   return (
     <div className="min-h-screen bg-white">
       {vizTreeRootList.map((element) => (
@@ -21,6 +13,7 @@ export default function VisualizationMain({ vizTreeRootList }) {
           key={"viz-" + vizId}
           id={"viz-" + vizId++}
           chartSettings={element}
+          closeWindow={closeWindow}
         ></DraggableWindow>
       ))}
     </div>

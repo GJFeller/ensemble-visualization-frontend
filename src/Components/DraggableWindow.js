@@ -41,7 +41,7 @@ export default function DraggableWindow({
   };
 
   const closeWindowPressed = (e) => {
-    closeWindow(resizible.current.id);
+    closeWindow(chartSettings.chartId);
   };
 
   useEffect(() => {
