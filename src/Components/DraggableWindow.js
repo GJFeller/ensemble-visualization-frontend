@@ -9,6 +9,7 @@ import {
 import Draggable from "react-draggable";
 import closeIcon from "../Images/close.png";
 import optionsIcon from "../Images/options.png";
+import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
 
 var plotId = 0;
@@ -100,10 +101,21 @@ export default function DraggableWindow({
                   onClick={openSettings}
                 >
                   <img
+                    src={parentIcon}
+                    width="24"
+                    height="24"
+                    alt="set parent window"
+                  />
+                </button>
+                <button
+                  className="border-2 border-black rounded-lg p-1"
+                  onClick={openSettings}
+                >
+                  <img
                     src={optionsIcon}
                     width="24"
                     height="24"
-                    alt="close window"
+                    alt="chart options window"
                   />
                 </button>
                 <button
