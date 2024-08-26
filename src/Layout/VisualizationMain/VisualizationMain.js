@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from "react";
 import DraggableWindow from "../../Components/DraggableWindow";
+import ReactFlow from "react-flow";
 
-var vizId = 0;
+const DraggableWindowList = React.memo(({ vizTreeRootList, closeWindow }) => {
+  return (
+    <>
+      {vizTreeRootList.map((element) => (
+        <DraggableWindow
+          key={"viz-" + element.chartId}
+          id={"viz-" + element.chartId}
+          chartSettings={element}
+          closeWindow={closeWindow}
+        ></DraggableWindow>
+      ))}
+    </>
+  );
+});
 
 export default function VisualizationMain({ vizTreeRootList, closeWindow }) {
   console.log(vizTreeRootList);
@@ -22,22 +36,18 @@ export default function VisualizationMain({ vizTreeRootList, closeWindow }) {
   };
 
   useEffect(() => {
-    /*window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      };*/
+    };
   });
 
   return (
     <div className="min-h-screen bg-white">
-      {vizTreeRootList.map((element) => (
-        <DraggableWindow
-          key={"viz-" + vizId}
-          id={"viz-" + vizId++}
-          chartSettings={element}
-          closeWindow={closeWindow}
-        ></DraggableWindow>
-      ))}
+      <DraggableWindowList
+        vizTreeRootList={vizTreeRootList}
+        closeWindow={closeWindow}
+      />
     </div>
   );
 }

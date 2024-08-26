@@ -6,6 +6,8 @@ import DraggableWindow from "./Components/DraggableWindow";
 import { useState } from "react";
 import * as ChartUtils from "./utils/ChartUtils";
 
+let plotId = 0;
+
 function App() {
   const [visualizationTreeRootList, setVisualizationList] = useState([]);
 
@@ -36,26 +38,13 @@ function App() {
       let chartSettings = new ChartUtils.ChartSettings(
         newChart,
         "Header Title",
-        "",
+        "plot-" + plotId++,
       );
 
       chartSettings.ensembleList = [...selectedEnsembleList];
       chartSettings.simulationList = [...selectedSimulationList];
 
       newChartTreeRootList.push(chartSettings);
-      //newChartTreeRootList.push(
-      //  {
-      //    id: "viz-"+vizId,
-      //    component:
-      //       <DraggableWindow
-      //         key={"viz-"+vizId}
-      //         id={"viz-"+vizId++}
-      //         chartType={newChart}
-      //         selectedEnsembleList={selectedEnsembleList}
-      //         selectedSimulationList={selectedSimulationList}
-      //         closeWindow={closeWindow}
-      //       />,
-      //  })
     }
     setVisualizationList([
       ...visualizationTreeRootList,

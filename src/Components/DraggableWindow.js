@@ -12,8 +12,6 @@ import optionsIcon from "../Images/options.png";
 import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
 
-var plotId = 0;
-
 export default function DraggableWindow({
   id = "",
   chartSettings,
@@ -21,11 +19,9 @@ export default function DraggableWindow({
 }) {
   const container = useRef(null);
   const resizible = useRef(null);
-  const windowBodyId = "window-body" + plotId;
-  const chartId = "plot" + plotId++;
+  const windowBodyId = "window-body-" + chartSettings.chartId;
 
   console.log(chartSettings);
-  chartSettings.chartId = chartId;
   const [currentChartSettings, setCurrentChartSettings] =
     useState(chartSettings);
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -64,8 +60,9 @@ export default function DraggableWindow({
             currentChartSettings,
           );
         });
-
-        resizeObserver.observe(resizible.current);
+        if (resizible.current !== null) {
+          resizeObserver.observe(resizible.current);
+        }
         return () => {
           resizeObserver.disconnect();
         };
