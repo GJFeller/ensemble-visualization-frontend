@@ -1,10 +1,12 @@
-import "./App.css";
 import EnsembleSideBar from "./Layout/EnsembleSideBar/EnsembleSideBar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from "./Layout/VisualizationMain/VisualizationMain";
-import DraggableWindow from "./Components/DraggableWindow";
 import { useState } from "react";
 import * as ChartUtils from "./utils/ChartUtils";
+
+import "./App.css";
+
+import Flowchart from "./Components/Flowchart";
 
 let plotId = 0;
 
@@ -73,3 +75,13 @@ function App() {
 }
 
 export default App;
+
+//function App() {
+//  return (
+//    <div className="App">
+//      <Flowchart />
+//    </div>
+//  );
+//}
+//
+//export default App;
