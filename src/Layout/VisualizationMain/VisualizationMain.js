@@ -59,7 +59,7 @@ const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
   }, [vizTreeRootList]);
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div className="bg-white" style={{ width: "100vw", height: "100vh" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -68,7 +68,6 @@ const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
-        className="bg-white"
       >
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>

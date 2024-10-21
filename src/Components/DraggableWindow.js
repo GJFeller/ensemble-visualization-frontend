@@ -86,17 +86,6 @@ const DraggableWindow = ({ data }) => {
                 onClick={openSettings}
               >
                 <img
-                  src={parentIcon}
-                  width="24"
-                  height="24"
-                  alt="set parent window"
-                />
-              </button>
-              <button
-                className="border-2 border-black rounded-lg p-1"
-                onClick={openSettings}
-              >
-                <img
                   src={optionsIcon}
                   width="24"
                   height="24"
