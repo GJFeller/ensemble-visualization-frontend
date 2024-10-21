@@ -6,8 +6,6 @@ import * as ChartUtils from "./utils/ChartUtils";
 
 import "./App.css";
 
-import Flowchart from "./Components/Flowchart";
-
 let plotId = 0;
 
 function App() {
