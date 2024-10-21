@@ -1,7 +1,6 @@
 import React, { useEffect, useCallback } from "react";
 //import DraggableWindow from "../../Components/DraggableWindow";
-import DraggableWindowFlow from "../../Components/DraggableWindow-Flow";
-import NodeChart from "../../Components/NodeChart";
+import DraggableWindow from "../../Components/DraggableWindow";
 import {
   ReactFlow,
   useNodesState,
@@ -14,8 +13,6 @@ import {
 //import Flowchart from "../../Components/Flowchart";
 
 import "@xyflow/react/dist/base.css";
-
-import CustomNode from "../../Components/CustomNode";
 
 /*const DraggableWindowList = React.memo(({ vizTreeRootList, closeWindow }) => {
   return (
@@ -32,7 +29,7 @@ import CustomNode from "../../Components/CustomNode";
   );
 });*/
 
-const nodeTypes = { draggableWindow: NodeChart };
+const nodeTypes = { draggableWindow: DraggableWindow };
 
 const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);

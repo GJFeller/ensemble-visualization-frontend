@@ -14,7 +14,7 @@ import ModalChartSettings from "./ModalChartSettings";
 
 import "@xyflow/react/dist/base.css";
 
-const NodeChart = ({ data }) => {
+const DraggableWindow = ({ data }) => {
   let chartSettings = data.chartSettings;
   const closeWindow = data.closeWindow;
   const container = useRef(null);
@@ -136,4 +136,4 @@ const NodeChart = ({ data }) => {
   );
 };
 
-export default memo(NodeChart);
+export default memo(DraggableWindow);
