@@ -127,7 +127,7 @@ export default function DraggableWindowFlow({ data }) {
         </div>
         <div
           id={windowBodyId}
-          className="flex items-center flex-auto max-w-full max-h-full overflow-auto"
+          className="flex bg-white items-center flex-auto max-w-full max-h-full overflow-auto"
           ref={container}
         >
           <svg id={currentChartSettings.chartId}></svg>

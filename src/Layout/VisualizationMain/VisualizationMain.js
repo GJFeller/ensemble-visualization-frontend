@@ -50,6 +50,7 @@ const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
       nodeList.push({
         id: "node-" + chartSettings.chartId,
         type: "draggableWindow",
+        dragHandle: ".handle",
         position: { x: 0, y: 0 },
         data: {
           chartSettings: chartSettings,
