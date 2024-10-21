@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import {
   ChartType,
   ChartRender,
@@ -6,17 +6,17 @@ import {
   chartOptions,
 } from "../utils/ChartUtils";
 
-import Draggable from "react-draggable";
+import { Handle, Position, NodeResizer } from "@xyflow/react";
 import closeIcon from "../Images/close.png";
 import optionsIcon from "../Images/options.png";
 import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
 
-export default function DraggableWindow({
-  id = "",
-  chartSettings,
-  closeWindow,
-}) {
+import "@xyflow/react/dist/base.css";
+
+const DraggableWindow = ({ data }) => {
+  let chartSettings = data.chartSettings;
+  const closeWindow = data.closeWindow;
   const container = useRef(null);
   const resizible = useRef(null);
   const windowBodyId = "window-body-" + chartSettings.chartId;
@@ -52,92 +52,68 @@ export default function DraggableWindow({
           currentChartSettings.chartId,
           currentChartSettings,
         );
-
-        // Create a new ResizeObserver instance
-        const resizeObserver = new ResizeObserver((entries) => {
-          ChartRender.drawChart(
-            currentChartSettings.chartId,
-            currentChartSettings,
-          );
-        });
-        if (resizible.current !== null) {
-          resizeObserver.observe(resizible.current);
-        }
-        return () => {
-          resizeObserver.disconnect();
-        };
       });
   }, [currentChartSettings]);
 
   return (
     <>
-      <Draggable
-        handle=".handle"
-        defaultPosition={{ x: 0, y: 0 }}
-        position={null}
-        scale={1}
+      <NodeResizer
+        minWidth={200}
+        minHeight={200}
+        onResizeEnd={() =>
+          ChartRender.drawChart(
+            currentChartSettings.chartId,
+            currentChartSettings,
+          )
+        }
+      />
+      <div
+        id={"viz-" + chartSettings.chartId}
+        ref={resizible}
+        className="flex flex-col items-stretch min-w-full min-h-full max-w-full max-h-full border-2 overflow-clip"
       >
-        <div
-          id={id}
-          ref={resizible}
-          className="flex flex-col items-stretch min-w-32 min-h-32 w-64 h-64 max-w-full max-h-full border-2 overflow-auto resize"
-        >
-          <div className="handle justify-items-stretch">
-            <div
-              id="header"
-              className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded"
-            >
-              <div className="grow place-self-center">
-                <h2 className="text-center">
-                  {currentChartSettings.chartTitle}
-                </h2>
-              </div>
-              <div className="place-self-center flex justify-end space-x-2">
-                <button
-                  className="border-2 border-black rounded-lg p-1"
-                  onClick={openSettings}
-                >
-                  <img
-                    src={parentIcon}
-                    width="24"
-                    height="24"
-                    alt="set parent window"
-                  />
-                </button>
-                <button
-                  className="border-2 border-black rounded-lg p-1"
-                  onClick={openSettings}
-                >
-                  <img
-                    src={optionsIcon}
-                    width="24"
-                    height="24"
-                    alt="chart options window"
-                  />
-                </button>
-                <button
-                  className="border-2 border-black rounded-lg p-1"
-                  onClick={closeWindowPressed}
-                >
-                  <img
-                    src={closeIcon}
-                    width="24"
-                    height="24"
-                    alt="close window"
-                  />
-                </button>
-              </div>
+        <div className="handle justify-items-stretch">
+          <div
+            id="header"
+            className="bg-gray-300 px-2 h-16 flex flex-row space-x-2 rounded"
+          >
+            <div className="grow place-self-center">
+              <h2 className="text-center">{currentChartSettings.chartTitle}</h2>
+            </div>
+            <div className="place-self-center flex justify-end space-x-2">
+              <button
+                className="border-2 border-black rounded-lg p-1"
+                onClick={openSettings}
+              >
+                <img
+                  src={optionsIcon}
+                  width="24"
+                  height="24"
+                  alt="chart options window"
+                />
+              </button>
+              <button
+                className="border-2 border-black rounded-lg p-1"
+                onClick={closeWindowPressed}
+              >
+                <img
+                  src={closeIcon}
+                  width="24"
+                  height="24"
+                  alt="close window"
+                />
+              </button>
             </div>
           </div>
-          <div
-            id={windowBodyId}
-            className="flex items-center flex-auto max-w-full max-h-full overflow-auto"
-            ref={container}
-          >
-            <svg id={currentChartSettings.chartId}></svg>
-          </div>
         </div>
-      </Draggable>
+        <div
+          id={windowBodyId}
+          className="flex items-center flex-auto max-w-full max-h-full overflow-auto"
+          ref={container}
+        >
+          <svg id={currentChartSettings.chartId}></svg>
+        </div>
+      </div>
       <ModalChartSettings
         isOpen={isOpenModal}
         setIsOpenModal={() => setIsOpenModal(!isOpenModal)}
@@ -147,82 +123,6 @@ export default function DraggableWindow({
       ></ModalChartSettings>
     </>
   );
-}
+};
 
-//export type DraggableWindowProps = {
-//  windowTitle?: string
-// };
-//
-//export default class DraggableWindow extends Component<DraggableWindowProps> {
-//  constructor(props) {
-//        super(props);
-//        this.chartId = "plot"+plotId++;
-//        this.state = {
-//			    dimensions: null
-//		    };
-//    }
-//
-//  componentDidMount() {
-//    this.setState({
-//			dimensions: {
-//				width: this.container.offsetWidth,
-//				height: this.container.offsetHeight,
-//			}
-//		});
-//    this.drawChart();
-//  }
-//
-//  drawChart() {
-//    const data = [12, 5, 6, 6, 9, 10];
-//    console.log(this.container.offsetWidth);
-//    const width = this.container.offsetWidth;
-//    const barSize = width/data.length - 5*(data.length-1);
-//
-//        const svg = d3.select("#"+this.chartId)
-//                    .attr("width", width)
-//                    .attr("height", 300);
-//
-//        svg.selectAll("rect")
-//            .data(data)
-//            .enter()
-//            .append("rect")
-//            .attr("x", (d, i) => i * (barSize + 10))
-//            .attr("y", (d, i) => 300 - 10 * d)
-//            .attr("width", barSize)
-//            .attr("height", (d, i) => d * 10)
-//            .attr("fill", "green");
-//  }
-//
-//  render() {
-//      const { windowTitle = "Header Title" } = this.props;
-//      return(
-//        <Draggable
-//          handle='.handle'
-//          defaultPosition={{x: 0, y: 0}}
-//          position={null}
-//          scale={1}
-//          onStart={this.handleStart}
-//          onDrag={this.handleDrag}
-//          onStop={this.handleStop}>
-//          <div>
-//          <div className="min-w-48 min-h-48 w-64 max-w-full border-2 overflow-auto resize">
-//            <div className='handle'>
-//              <div id="header" className="bg-gray-300 h-16 grid grid-cols-3 gap-4 place-items-center rounded">
-//                <div>
-//
-//                </div>
-//                <div className="content-center">
-//                  <h2 className="text-center">{windowTitle}</h2>
-//                </div>
-//                <div className="">
-//
-//                </div>
-//              </div>
-//            </div>
-//            <div id="window-body" ref={e => (this.container = e)}><svg id={this.chartId}></svg></div>
-//          </div>
-//          </div>
-//        </Draggable>
-//      )
-//  }
-//}
+export default memo(DraggableWindow);
