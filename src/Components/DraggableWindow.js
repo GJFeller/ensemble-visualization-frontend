@@ -11,8 +11,13 @@ import closeIcon from "../Images/close.png";
 import optionsIcon from "../Images/options.png";
 import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
+import Heatmap from "./Charts/Heatmap";
+//import CorrelationMatrix from "./Charts/CorrelationMatrix";
 
 import "@xyflow/react/dist/base.css";
+
+const MINWIDTH = 200,
+  MINHEIGHT = 200;
 
 const DraggableWindow = ({ data }) => {
   let chartSettings = data.chartSettings;
@@ -21,10 +26,10 @@ const DraggableWindow = ({ data }) => {
   const resizible = useRef(null);
   const windowBodyId = "window-body-" + chartSettings.chartId;
 
-  console.log(chartSettings);
   const [currentChartSettings, setCurrentChartSettings] =
     useState(chartSettings);
   const [isOpenModal, setIsOpenModal] = useState(false);
+  const [dimensions, setDimensions] = useState([MINWIDTH, MINHEIGHT - 64]);
 
   let modalTitle = "Chart settings for " + currentChartSettings.chartTitle;
 
@@ -58,14 +63,20 @@ const DraggableWindow = ({ data }) => {
   return (
     <>
       <NodeResizer
-        minWidth={200}
-        minHeight={200}
-        onResizeEnd={() =>
-          ChartRender.drawChart(
-            currentChartSettings.chartId,
-            currentChartSettings,
-          )
-        }
+        minWidth={MINWIDTH}
+        minHeight={MINHEIGHT}
+        onResizeEnd={() => {
+          if (currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX) {
+            ChartRender.drawChart(
+              currentChartSettings.chartId,
+              currentChartSettings,
+            );
+          } else {
+            const plotWidth = container.current.offsetWidth;
+            const plotHeight = container.current.offsetHeight;
+            setDimensions([plotWidth, plotHeight]);
+          }
+        }}
       />
       <div
         id={"viz-" + chartSettings.chartId}
@@ -111,7 +122,11 @@ const DraggableWindow = ({ data }) => {
           className="flex items-center flex-auto max-w-full max-h-full overflow-auto"
           ref={container}
         >
-          <svg id={currentChartSettings.chartId}></svg>
+          {currentChartSettings.chartType === ChartType.CORRELATIONMATRIX ? (
+            <Heatmap width={dimensions[0]} height={dimensions[1]} />
+          ) : (
+            <svg id={currentChartSettings.chartId}></svg>
+          )}
         </div>
       </div>
       <ModalChartSettings

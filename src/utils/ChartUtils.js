@@ -228,6 +228,13 @@ export class ChartSettings {
         for (const simulation of this.simulationList)
           restUrl = restUrl.concat("&simulation=", simulation);
         return restUrl;
+      case ChartType.CORRELATIONMATRIX:
+        restUrl = restUrl.concat("temporal-evolution");
+        for (const ensemble of this.ensembleList)
+          restUrl = restUrl.concat("&ensemble=", ensemble);
+        for (const simulation of this.simulationList)
+          restUrl = restUrl.concat("&simulation=", simulation);
+        return restUrl;
       default:
         throw new Error("Chart type does not exist");
     }
@@ -237,6 +244,7 @@ export class ChartSettings {
 export class ChartType {
   static #_DR = 0;
   static #_TEMPORAL = 1;
+  static #_CORRMATRIX = 2;
 
   static get DR() {
     return this.#_DR;
@@ -244,10 +252,14 @@ export class ChartType {
   static get TEMPORAL() {
     return this.#_TEMPORAL;
   }
+  static get CORRELATIONMATRIX() {
+    return this.#_CORRMATRIX;
+  }
 
   static fromChartTypeString(chartTypeString) {
     if (chartTypeString === "Dimensional Reduction") return this.DR;
     if (chartTypeString === "Temporal") return this.TEMPORAL;
+    if (chartTypeString === "Correlation Matrix") return this.CORRELATIONMATRIX;
     throw new Error("Chart type does not exist");
   }
 
@@ -255,6 +267,7 @@ export class ChartType {
     const chartTypeList = [];
     chartTypeList.push("Dimensional Reduction");
     chartTypeList.push("Temporal");
+    chartTypeList.push("Correlation Matrix");
     return chartTypeList;
   }
 }
@@ -272,6 +285,8 @@ export class ChartRender {
         break;
       case ChartType.TEMPORAL:
         this.#drawTimeChart(chartId, chartSettings);
+        break;
+      case ChartType.CORRELATIONMATRIX:
         break;
       default:
         throw new Error("Chart type does not exist");
