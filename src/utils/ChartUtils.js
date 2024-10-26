@@ -229,7 +229,7 @@ export class ChartSettings {
           restUrl = restUrl.concat("&simulation=", simulation);
         return restUrl;
       case ChartType.CORRELATIONMATRIX:
-        restUrl = restUrl.concat("temporal-evolution");
+        restUrl = restUrl.concat("correlation-matrix");
         for (const ensemble of this.ensembleList)
           restUrl = restUrl.concat("&ensemble=", ensemble);
         for (const simulation of this.simulationList)

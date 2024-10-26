@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef, useState, memo } from "react";
 import { Group } from "@visx/group";
 import { scaleLinear } from "@visx/scale";
 import { HeatmapCircle, HeatmapRect } from "@visx/heatmap";
+import { Text } from "@visx/text";
+
+const background = "#ffffff";
+const cool1 = "#122549";
+const cool2 = "#b4fbde";
 
 function max(data, value) {
   return Math.max(...data.map(value));
@@ -17,81 +22,126 @@ function min(data, value) {
 //const colorMax = max(binData, (d) => max(bins(d), count));
 //const bucketSizeMax = max(binData, (d) => bins(d).length);
 //
-//// scales
-//const xScale = scaleLinear({
-//  domain: [0, binData.length],
-//});
-//const yScale = scaleLinear({
-//  domain: [0, bucketSizeMax],
-//});
-//const rectColorScale = scaleLinear({
-//  range: [cool1, cool2],
-//  domain: [0, colorMax],
-//});
-//const opacityScale = scaleLinear({
-//  range: [1, 1],
-//  domain: [0, colorMax],
-//});
 
-const defaultMargin = { top: 10, left: 10, right: 10, bottom: 10 };
+const defaultMargin = { top: 10, left: 10, right: 40, bottom: 10 };
+const legendMargin = { top: 10, left: 10, right: 10, bottom: 10 };
 
 function CorrelationMatrix({
   width,
   height,
-  data,
+  chartSettings,
   events = false,
   margin = defaultMargin,
-  separation = 20,
+  gap = 1,
 }) {
-  const size =
+  // Chart sizes and variables
+  const xSize =
     width > margin.left + margin.right
-      ? width - margin.left - margin.right - separation
+      ? width - margin.left - margin.right
       : width;
-  const xMax = size;
-  const yMax = height - margin.bottom - margin.top;
+  const ySize =
+    height > margin.bottom + margin.top
+      ? height - margin.bottom - margin.top
+      : height;
 
-  const binWidth = xMax / binData.length;
-  const binHeight = yMax / bucketSizeMax;
+  let rectWidth = 0;
+  let rectHeight = 0;
+  let variables = [];
+  if (
+    chartSettings.chartData !== null &&
+    chartSettings.chartData.length !== 0
+  ) {
+    variables = Object.keys(chartSettings.chartData);
+    rectWidth = (xSize - gap * (variables.length - 1)) / variables.length;
+    rectHeight = (ySize - gap * (variables.length - 1)) / variables.length;
+  }
+  // Legend sizes
+  const legendRectWidth =
+    (margin.right - legendMargin.left - legendMargin.right) / 2;
+  const legendRectHeight = ySize;
 
-  xScale.range([0, xMax]);
-  yScale.range([yMax, 0]);
+  // Color scale
+  const colorScale = scaleLinear({
+    domain: [-1, 0, 1],
+    range: ["tomato", "white", "steelblue"],
+  });
 
-  return width < 10 ? null : (
+  useEffect(() => {
+    fetch(process.env.REACT_APP_BACKEND_URL + chartSettings.getRestUrl())
+      .then((res) => {
+        return res.json();
+      })
+      .then((dataResponse) => {
+        chartSettings.chartData = dataResponse;
+      });
+  }, [chartSettings]);
+
+  //const binWidth = xMax / binData.length;
+  //const binHeight = yMax / bucketSizeMax;
+
+  //xScale.range([0, xMax]);
+  //yScale.range([yMax, 0]);
+
+  return chartSettings.chartData === null || width < 10 ? null : (
     <svg width={width} height={height}>
       <rect x={0} y={0} width={width} height={height} fill={background} />
       <Group top={margin.top} left={margin.left}>
-        <HeatmapRect
-          data={binData}
-          xScale={(d) => xScale(d) ?? 0}
-          yScale={(d) => yScale(d) ?? 0}
-          colorScale={rectColorScale}
-          opacityScale={opacityScale}
-          binWidth={binWidth}
-          binHeight={binHeight}
-          gap={2}
-        >
-          {(heatmap) =>
-            heatmap.map((heatmapBins) =>
-              heatmapBins.map((bin) => (
-                <rect
-                  key={`heatmap-rect-${bin.row}-${bin.column}`}
-                  className="visx-heatmap-rect"
-                  width={bin.width}
-                  height={bin.height}
-                  x={bin.x}
-                  y={bin.y}
-                  fill={bin.color}
-                  fillOpacity={bin.opacity}
-                  onClick={() => {
-                    if (!events) return;
-                    const { row, column } = bin;
-                    alert(JSON.stringify({ row, column, bin: bin.bin }));
-                  }}
-                />
-              )),
-            )
-          }
-        </HeatmapRect>
+        {/* Add column labels */}
+        {console.log(variables)}
+        {console.log("Dimensions:", rectWidth, rectHeight)}
+        {variables.map((variable, i) => (
+          <Text
+            key={`column-${i}`}
+            x={i * rectWidth + rectWidth / 2}
+            y={-20}
+            textAnchor="middle"
+            fontSize={12}
+          >
+            {variable}
+          </Text>
+        ))}
+
+        {/* Add row labels */}
+        {variables.map((variable, i) => (
+          <Text
+            key={`row-${i}`}
+            x={-10}
+            y={i * rectHeight + rectHeight / 2}
+            textAnchor="end"
+            fontSize={12}
+          >
+            {variable}
+          </Text>
+        ))}
+
+        {/* Create correlation matrix cells */}
+        {variables.map((row, i) =>
+          variables.map((col, j) => (
+            <g key={`cell-${i}-${j}`}>
+              <rect
+                x={j * rectWidth + j * gap}
+                y={i * rectHeight + i * gap}
+                width={rectWidth}
+                height={rectHeight}
+                fill={colorScale(chartSettings.chartData[row][col])}
+                stroke="#ffffff"
+              />
+            </g>
+          )),
+        )}
+      </Group>
+      <Group
+        top={legendMargin.top}
+        left={margin.left + xSize + legendMargin.left}
+      >
+        <rect
+          x={0}
+          y={0}
+          width={legendRectWidth}
+          height={legendRectHeight}
+          fill={colorScale(1)}
+          stroke="#ffffff"
+        ></rect>
       </Group>
     </svg>
   );

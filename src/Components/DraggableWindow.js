@@ -15,6 +15,7 @@ import Heatmap from "./Charts/Heatmap";
 //import CorrelationMatrix from "./Charts/CorrelationMatrix";
 
 import "@xyflow/react/dist/base.css";
+import CorrelationMatrix from "./Charts/CorrelationMatrix";
 
 const MINWIDTH = 200,
   MINHEIGHT = 200;
@@ -47,17 +48,21 @@ const DraggableWindow = ({ data }) => {
   };
 
   useEffect(() => {
-    fetch(process.env.REACT_APP_BACKEND_URL + currentChartSettings.getRestUrl())
-      .then((res) => {
-        return res.json();
-      })
-      .then((dataResponse) => {
-        currentChartSettings.chartData = dataResponse;
-        ChartRender.drawChart(
-          currentChartSettings.chartId,
-          currentChartSettings,
-        );
-      });
+    if (currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX) {
+      fetch(
+        process.env.REACT_APP_BACKEND_URL + currentChartSettings.getRestUrl(),
+      )
+        .then((res) => {
+          return res.json();
+        })
+        .then((dataResponse) => {
+          currentChartSettings.chartData = dataResponse;
+          ChartRender.drawChart(
+            currentChartSettings.chartId,
+            currentChartSettings,
+          );
+        });
+    }
   }, [currentChartSettings]);
 
   return (
@@ -123,7 +128,11 @@ const DraggableWindow = ({ data }) => {
           ref={container}
         >
           {currentChartSettings.chartType === ChartType.CORRELATIONMATRIX ? (
-            <Heatmap width={dimensions[0]} height={dimensions[1]} />
+            <CorrelationMatrix
+              width={dimensions[0]}
+              height={dimensions[1]}
+              chartSettings={currentChartSettings}
+            />
           ) : (
             <svg id={currentChartSettings.chartId}></svg>
           )}
