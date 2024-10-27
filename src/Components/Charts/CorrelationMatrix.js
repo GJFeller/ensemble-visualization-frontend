@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, memo } from "react";
 import { Group } from "@visx/group";
 import { scaleLinear } from "@visx/scale";
-import { HeatmapCircle, HeatmapRect } from "@visx/heatmap";
+import { LinearGradient } from "@visx/gradient";
 import { Text } from "@visx/text";
 
 const background = "#ffffff";
@@ -134,14 +134,40 @@ function CorrelationMatrix({
         top={legendMargin.top}
         left={margin.left + xSize + legendMargin.left}
       >
+        <defs>
+          <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{ stopColor: "tomato" }} />
+            <stop offset="50%" style={{ stopColor: "white" }} />
+            <stop offset="100%" style={{ stopColor: "steelblue" }} />
+          </linearGradient>
+        </defs>
         <rect
           x={0}
           y={0}
           width={legendRectWidth}
           height={legendRectHeight}
-          fill={colorScale(1)}
+          fill={"url(#bar-gradient)"}
           stroke="#ffffff"
         ></rect>
+        <Text x={legendRectWidth + 10} y={5} textAnchor="middle" fontSize={10}>
+          -1.0
+        </Text>
+        <Text
+          x={legendRectWidth + 10}
+          y={ySize / 2 + 5}
+          textAnchor="middle"
+          fontSize={10}
+        >
+          0.0
+        </Text>
+        <Text
+          x={legendRectWidth + 10}
+          y={ySize + 2.5}
+          textAnchor="middle"
+          fontSize={10}
+        >
+          1.0
+        </Text>
       </Group>
     </svg>
   );
