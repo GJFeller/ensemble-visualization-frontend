@@ -11,11 +11,9 @@ import closeIcon from "../Images/close.png";
 import optionsIcon from "../Images/options.png";
 import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
-import Heatmap from "./Charts/Heatmap";
-//import CorrelationMatrix from "./Charts/CorrelationMatrix";
+import CorrelationMatrix from "./Charts/CorrelationMatrix";
 
 import "@xyflow/react/dist/base.css";
-import CorrelationMatrix from "./Charts/CorrelationMatrix";
 
 const MINWIDTH = 200,
   MINHEIGHT = 200;
@@ -48,21 +46,19 @@ const DraggableWindow = ({ data }) => {
   };
 
   useEffect(() => {
-    if (currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX) {
-      fetch(
-        process.env.REACT_APP_BACKEND_URL + currentChartSettings.getRestUrl(),
-      )
-        .then((res) => {
-          return res.json();
-        })
-        .then((dataResponse) => {
-          currentChartSettings.chartData = dataResponse;
+    fetch(process.env.REACT_APP_BACKEND_URL + currentChartSettings.getRestUrl())
+      .then((res) => {
+        return res.json();
+      })
+      .then((dataResponse) => {
+        currentChartSettings.chartData = dataResponse;
+        if (currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX) {
           ChartRender.drawChart(
             currentChartSettings.chartId,
             currentChartSettings,
           );
-        });
-    }
+        }
+      });
   }, [currentChartSettings]);
 
   return (
