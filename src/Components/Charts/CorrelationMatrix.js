@@ -1,12 +1,9 @@
 import React, { useEffect, useRef, useState, memo } from "react";
 import { Group } from "@visx/group";
 import { scaleLinear } from "@visx/scale";
-import { LinearGradient } from "@visx/gradient";
+import { useTooltip, Tooltip, defaultStyles } from "@visx/tooltip";
 import { Text } from "@visx/text";
-
-const background = "#ffffff";
-const cool1 = "#122549";
-const cool2 = "#b4fbde";
+import { localPoint } from "@visx/event";
 
 function max(data, value) {
   return Math.max(...data.map(value));
@@ -65,6 +62,19 @@ function CorrelationMatrix({
     domain: [-1, 0, 1],
     range: ["tomato", "white", "steelblue"],
   });
+  const background = "#ffffff";
+
+  // Tooltip variables
+  let tooltipTimeout = 0;
+  const tooltipStyles = {
+    ...defaultStyles,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    color: "white",
+    padding: "8px",
+    borderRadius: "4px",
+  };
+  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
+    useTooltip();
 
   useEffect(() => {
     fetch(process.env.REACT_APP_BACKEND_URL + chartSettings.getRestUrl())
@@ -83,93 +93,137 @@ function CorrelationMatrix({
   //yScale.range([yMax, 0]);
 
   return chartSettings.chartData === null || width < 10 ? null : (
-    <svg width={width} height={height}>
-      <rect x={0} y={0} width={width} height={height} fill={background} />
-      <Group top={margin.top} left={margin.left}>
-        {/* Add column labels */}
-        {console.log(variables)}
-        {console.log("Dimensions:", rectWidth, rectHeight)}
-        {variables.map((variable, i) => (
+    <>
+      <svg width={width} height={height}>
+        <rect x={0} y={0} width={width} height={height} fill={background} />
+        <Group top={margin.top} left={margin.left}>
+          {/* Add column labels */}
+          {variables.map((variable, i) => (
+            <Text
+              key={`column-${i}`}
+              x={i * rectWidth + rectWidth / 2}
+              y={-20}
+              textAnchor="middle"
+              fontSize={12}
+            >
+              {variable}
+            </Text>
+          ))}
+
+          {/* Add row labels */}
+          {variables.map((variable, i) => (
+            <Text
+              key={`row-${i}`}
+              x={-10}
+              y={i * rectHeight + rectHeight / 2}
+              textAnchor="end"
+              fontSize={12}
+            >
+              {variable}
+            </Text>
+          ))}
+
+          {/* Create correlation matrix cells */}
+          {variables.map((row, i) =>
+            variables.map((col, j) => (
+              <g key={`cell-${i}-${j}`}>
+                <rect
+                  x={j * rectWidth + j * gap}
+                  y={i * rectHeight + i * gap}
+                  width={rectWidth}
+                  height={rectHeight}
+                  fill={colorScale(chartSettings.chartData[row][col])}
+                  stroke="#ffffff"
+                  onClick={() => {
+                    if (events)
+                      alert(
+                        `clicked: ${JSON.stringify(chartSettings.chartData[row][col])}`,
+                      );
+                  }}
+                  onMouseLeave={() => {
+                    tooltipTimeout = window.setTimeout(() => {
+                      hideTooltip();
+                    }, 300);
+                  }}
+                  onMouseMove={(event) => {
+                    if (tooltipTimeout) clearTimeout(tooltipTimeout);
+                    const coords = localPoint(event);
+                    let data = {};
+                    data.row = row;
+                    data.col = col;
+                    data.value = chartSettings.chartData[row][col];
+                    showTooltip({
+                      tooltipData: data,
+                      tooltipTop: coords.y,
+                      tooltipLeft: coords.x,
+                    });
+                  }}
+                />
+              </g>
+            )),
+          )}
+        </Group>
+        <Group
+          top={legendMargin.top}
+          left={margin.left + xSize + legendMargin.left}
+        >
+          <defs>
+            <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style={{ stopColor: "tomato" }} />
+              <stop offset="50%" style={{ stopColor: "white" }} />
+              <stop offset="100%" style={{ stopColor: "steelblue" }} />
+            </linearGradient>
+          </defs>
+          <rect
+            x={0}
+            y={0}
+            width={legendRectWidth}
+            height={legendRectHeight}
+            fill={"url(#bar-gradient)"}
+            stroke="#ffffff"
+          ></rect>
           <Text
-            key={`column-${i}`}
-            x={i * rectWidth + rectWidth / 2}
-            y={-20}
+            x={legendRectWidth + 10}
+            y={5}
             textAnchor="middle"
-            fontSize={12}
+            fontSize={10}
           >
-            {variable}
+            -1.0
           </Text>
-        ))}
-
-        {/* Add row labels */}
-        {variables.map((variable, i) => (
           <Text
-            key={`row-${i}`}
-            x={-10}
-            y={i * rectHeight + rectHeight / 2}
-            textAnchor="end"
-            fontSize={12}
+            x={legendRectWidth + 10}
+            y={ySize / 2 + 5}
+            textAnchor="middle"
+            fontSize={10}
           >
-            {variable}
+            0.0
           </Text>
-        ))}
+          <Text
+            x={legendRectWidth + 10}
+            y={ySize + 2.5}
+            textAnchor="middle"
+            fontSize={10}
+          >
+            1.0
+          </Text>
+        </Group>
+      </svg>
 
-        {/* Create correlation matrix cells */}
-        {variables.map((row, i) =>
-          variables.map((col, j) => (
-            <g key={`cell-${i}-${j}`}>
-              <rect
-                x={j * rectWidth + j * gap}
-                y={i * rectHeight + i * gap}
-                width={rectWidth}
-                height={rectHeight}
-                fill={colorScale(chartSettings.chartData[row][col])}
-                stroke="#ffffff"
-              />
-            </g>
-          )),
-        )}
-      </Group>
-      <Group
-        top={legendMargin.top}
-        left={margin.left + xSize + legendMargin.left}
-      >
-        <defs>
-          <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style={{ stopColor: "tomato" }} />
-            <stop offset="50%" style={{ stopColor: "white" }} />
-            <stop offset="100%" style={{ stopColor: "steelblue" }} />
-          </linearGradient>
-        </defs>
-        <rect
-          x={0}
-          y={0}
-          width={legendRectWidth}
-          height={legendRectHeight}
-          fill={"url(#bar-gradient)"}
-          stroke="#ffffff"
-        ></rect>
-        <Text x={legendRectWidth + 10} y={5} textAnchor="middle" fontSize={10}>
-          -1.0
-        </Text>
-        <Text
-          x={legendRectWidth + 10}
-          y={ySize / 2 + 5}
-          textAnchor="middle"
-          fontSize={10}
-        >
-          0.0
-        </Text>
-        <Text
-          x={legendRectWidth + 10}
-          y={ySize + 2.5}
-          textAnchor="middle"
-          fontSize={10}
-        >
-          1.0
-        </Text>
-      </Group>
-    </svg>
+      {/* Tooltip */}
+      {tooltipData && (
+        <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
+          <div>
+            <div>
+              <strong className="text-xs">Row: {tooltipData.row}</strong>
+            </div>
+            <div>
+              <strong className="text-xs">Column: {tooltipData.col}</strong>
+            </div>
+            <div className="text-xs">Value: {tooltipData.value}</div>
+          </div>
+        </Tooltip>
+      )}
+    </>
   );
 }
 

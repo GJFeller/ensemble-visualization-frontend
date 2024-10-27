@@ -12,12 +12,9 @@ function App() {
   const [visualizationTreeRootList, setVisualizationList] = useState([]);
 
   const closeWindow = (id) => {
-    console.log(id);
-    console.log(visualizationTreeRootList);
     const newVisualizationTreeRootList = visualizationTreeRootList.filter(
       (el) => el.chartId !== id,
     );
-    console.log(newVisualizationTreeRootList);
     setVisualizationList(newVisualizationTreeRootList);
   };
 
@@ -73,13 +70,3 @@ function App() {
 }
 
 export default App;
-
-//function App() {
-//  return (
-//    <div className="App">
-//      <Flowchart />
-//    </div>
-//  );
-//}
-//
-//export default App;
