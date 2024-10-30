@@ -14,6 +14,7 @@ import ModalChartSettings from "./ModalChartSettings";
 import CorrelationMatrix from "./Charts/CorrelationMatrix";
 
 import "@xyflow/react/dist/base.css";
+import DRScatterPlot from "./Charts/DRScatterPlot";
 
 const MINWIDTH = 200,
   MINHEIGHT = 200;
@@ -67,7 +68,10 @@ const DraggableWindow = ({ data }) => {
         minWidth={MINWIDTH}
         minHeight={MINHEIGHT}
         onResizeEnd={() => {
-          if (currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX) {
+          if (
+            currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX &&
+            currentChartSettings.chartType !== ChartType.DR
+          ) {
             ChartRender.drawChart(
               currentChartSettings.chartId,
               currentChartSettings,
@@ -125,6 +129,12 @@ const DraggableWindow = ({ data }) => {
         >
           {currentChartSettings.chartType === ChartType.CORRELATIONMATRIX ? (
             <CorrelationMatrix
+              width={dimensions[0]}
+              height={dimensions[1]}
+              chartSettings={currentChartSettings}
+            />
+          ) : currentChartSettings.chartType === ChartType.DR ? (
+            <DRScatterPlot
               width={dimensions[0]}
               height={dimensions[1]}
               chartSettings={currentChartSettings}
