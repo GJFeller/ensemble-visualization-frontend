@@ -3,17 +3,9 @@ import { Group } from "@visx/group";
 import { scaleLinear, scaleOrdinal } from "@visx/scale";
 import { useTooltip, Tooltip, defaultStyles } from "@visx/tooltip";
 import { Text } from "@visx/text";
-import { localPoint } from "@visx/event";
+import { Brush } from '@visx/brush';
 import { Circle, LinePath, Polygon } from "@visx/shape";
 import * as d3 from "d3";
-
-function max(data, value) {
-  return Math.max(...data.map(value));
-}
-
-function min(data, value) {
-  return Math.min(...data.map(value));
-}
 
 const defaultMargin = { top: 10, left: 10, right: 100, bottom: 10 };
 const legendMargin = { top: 10, left: 10, right: 10, bottom: 10 };
@@ -48,6 +40,7 @@ function DRScatterPlot({
   };
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
     useTooltip();
+  const [selectedPoints, setSelectedPoints] = useState([]);
 
   var groups = [];
   var groupsPoints = {};
@@ -58,7 +51,6 @@ function DRScatterPlot({
   for (var item in chartSettings.chartData) {
     groups.push(item);
     if (groupsPoints[item] === undefined) groupsPoints[item] = [];
-    console.log(chartSettings.chartData);
     // eslint-disable-next-line no-loop-func
     chartSettings.chartData[item].forEach((simulation) => {
       xMax = Math.max(xMax, simulation.x);
@@ -81,6 +73,26 @@ function DRScatterPlot({
     range: ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"],
   });
 
+  const onBrushChange = (extent) => {
+    console.log(extent);
+    if (!extent) {
+      setSelectedPoints([]);
+      return;
+    }
+    // Find points within the brush extent
+    const {x0, y0, x1, y1} = extent;
+    const selected = groups.map((element) => {
+      console.log(element);
+      return chartSettings.chartData[element].filter(point => {
+        const px = xScale(point.x);
+        const py = yScale(point.y);
+        return px >= x0 && px <= x1 && py >= y0 && py <= y1;
+      })
+    });
+
+    setSelectedPoints(selected);
+  };
+
   return chartSettings.chartData === null || width < 10 ? null : (
     <>
       <svg width={width} height={height}>
@@ -94,7 +106,6 @@ function DRScatterPlot({
               yScale(d.y),
             ]);
             var hull = d3.polygonHull(pxPoint);
-            console.log(hull);
             return (
               <Polygon
                 points={hull}
@@ -120,6 +131,18 @@ function DRScatterPlot({
               );
             }),
           )}
+          <Brush
+          xScale={xScale}
+          yScale={yScale}
+          width={xSize}
+          height={ySize}
+          handleSize={8}
+          onChange={onBrushChange}
+          selectedBoxStyle={{
+            fill: "rgba(66, 153, 225, 0.2)",
+            stroke: "#4299e1"
+          }}
+        />
         </Group>
         {/* Legend group */}
         <Group
