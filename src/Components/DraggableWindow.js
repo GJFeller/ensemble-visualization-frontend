@@ -12,10 +12,9 @@ import optionsIcon from "../Images/options.png";
 import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
 import CorrelationMatrix from "./Charts/CorrelationMatrix";
-import ScatterPlot from "./Charts/ScatterPlot";
+import DRScatterPlot from "./Charts/DRScatterPlot";
 
 import "@xyflow/react/dist/base.css";
-import DRScatterPlot from "./Charts/DRScatterPlot";
 
 const MINWIDTH = 200,
   MINHEIGHT = 200;
