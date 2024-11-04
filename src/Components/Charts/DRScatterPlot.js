@@ -40,6 +40,7 @@ function DRScatterPlot({
   };
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
     useTooltip();
+  const [brushing, setBrushing] = useState(false);
   const [selectedPoints, setSelectedPoints] = useState([]);
 
   var groups = [];
@@ -73,23 +74,43 @@ function DRScatterPlot({
     range: ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"],
   });
 
-  const onBrushChange = (extent) => {
-    console.log(extent);
-    if (!extent) {
-      setSelectedPoints([]);
+  // Handle brush events
+  const onBrushStart = () => {
+    setBrushing(true);
+    hideTooltip();
+  };
+
+  const onBrushEnd = () => {
+    setBrushing(false);
+  };
+  
+  const onBrushUpdate = (bbox) => {
+    if (!bbox) {
+      setSelectedPoints(new Set());
       return;
     }
-    // Find points within the brush extent
-    const {x0, y0, x1, y1} = extent;
-    const selected = groups.map((element) => {
-      console.log(element);
-      return chartSettings.chartData[element].filter(point => {
-        const px = xScale(point.x);
-        const py = yScale(point.y);
-        return px >= x0 && px <= x1 && py >= y0 && py <= y1;
-      })
+
+    const { x0, x1, y0, y1 } = bbox;
+    const selected = new Set();
+
+    console.log("Brushing update:", bbox);
+    Object.entries(chartSettings.chartData).forEach(([ensemble, points]) => {
+      console.log("Points for ensemble:", points);
+      points.forEach(point => {
+        const xPos = point.x;
+        const yPos = point.y;
+        if (
+          xPos >= x0 &&
+          xPos <= x1 &&
+          yPos >= y0 &&
+          yPos <= y1
+        ) {
+          selected.add(point.name);
+        }
+      });
     });
 
+    console.log("Selected points:", Array.from(selected));
     setSelectedPoints(selected);
   };
 
@@ -131,18 +152,31 @@ function DRScatterPlot({
               );
             }),
           )}
+          {/* Brush */}
           <Brush
-          xScale={xScale}
-          yScale={yScale}
-          width={xSize}
-          height={ySize}
-          handleSize={8}
-          onChange={onBrushChange}
-          selectedBoxStyle={{
-            fill: "rgba(66, 153, 225, 0.2)",
-            stroke: "#4299e1"
-          }}
-        />
+            xScale={xScale}
+            yScale={yScale}
+            width={xSize}
+            height={ySize}
+            handleSize={8}
+            resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
+            brushDirection="both"
+            initialBrushPosition={{
+              start: { x: 0, y: 0 },
+              end: { x: 0, y: 0 },
+            }}
+            onBrushStart={onBrushStart}
+            onChange={brush => {
+              if (!brush) {
+                onBrushUpdate(null);
+                return;
+              }
+              const { x0, x1, y0, y1 } = brush;
+              onBrushUpdate({ x0, x1, y0, y1 });
+            }}
+            onBrushEnd={onBrushEnd}
+            onClick={() => setSelectedPoints(new Set())}
+          />
         </Group>
         {/* Legend group */}
         <Group

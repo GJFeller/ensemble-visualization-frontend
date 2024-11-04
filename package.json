@@ -18,6 +18,7 @@
     "@visx/shape": "^3.5.0",
     "@visx/text": "^3.3.0",
     "@visx/tooltip": "^3.3.0",
+    "@visx/voronoi": "^3.3.0",
     "@xyflow/react": "^12.2.0",
     "autoprefixer": "^10.4.20",
     "d3": "^7.9.0",
