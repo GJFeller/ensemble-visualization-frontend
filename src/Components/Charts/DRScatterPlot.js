@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, memo } from "react";
 import { Group } from "@visx/group";
 import { scaleLinear, scaleOrdinal } from "@visx/scale";
 import { useTooltip, Tooltip, defaultStyles } from "@visx/tooltip";
+import { localPoint } from "@visx/event";
 import { Text } from "@visx/text";
 import { Brush } from '@visx/brush';
 import { Circle, LinePath, Polygon } from "@visx/shape";
@@ -29,8 +30,7 @@ function DRScatterPlot({
   const background = "#ffffff";
   const pointRadius = 2;
 
-  // Tooltip variables
-  let tooltipTimeout = 0;
+  // Tooltip variables and styles
   const tooltipStyles = {
     ...defaultStyles,
     backgroundColor: "rgba(0,0,0,0.9)",
@@ -38,10 +38,34 @@ function DRScatterPlot({
     padding: "8px",
     borderRadius: "4px",
   };
-  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
-    useTooltip();
+  
+  const {
+    showTooltip,
+    hideTooltip,
+    tooltipData,
+    tooltipLeft,
+    tooltipTop,
+  } = useTooltip();
+
   const [brushing, setBrushing] = useState(false);
-  const [selectedPoints, setSelectedPoints] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedPoints, setSelectedPoints] = useState(new Set());
+  const [brushBox, setBrushBox] = useState(null);
+
+  let tooltipTimeout = 0;
+
+  // Clear tooltip timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeout) clearTimeout(tooltipTimeout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      hideTooltip();
+    }
+  }, [isDragging]);
 
   var groups = [];
   var groupsPoints = {};
@@ -74,110 +98,189 @@ function DRScatterPlot({
     range: ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"],
   });
 
+  // Check if a point is within the brush selection
+  const isPointInBrush = (point) => {
+    if (!brushBox) return false;
+    const { x0, x1, y0, y1 } = brushBox;
+    return (
+      point.x >= x0 &&
+      point.x <= x1 &&
+      point.y >= y0 &&
+      point.y <= y1
+    );
+  };
+
   // Handle brush events
   const onBrushStart = () => {
     setBrushing(true);
+    setIsDragging(true);
     hideTooltip();
   };
 
   const onBrushEnd = () => {
     setBrushing(false);
+    setIsDragging(false);
   };
   
   const onBrushUpdate = (bbox) => {
     if (!bbox) {
       setSelectedPoints(new Set());
+      setBrushBox(null);
       return;
     }
 
     const { x0, x1, y0, y1 } = bbox;
     const selected = new Set();
 
-    console.log("Brushing update:", bbox);
     Object.entries(chartSettings.chartData).forEach(([ensemble, points]) => {
-      console.log("Points for ensemble:", points);
       points.forEach(point => {
-        const xPos = point.x;
-        const yPos = point.y;
         if (
-          xPos >= x0 &&
-          xPos <= x1 &&
-          yPos >= y0 &&
-          yPos <= y1
+          point.x >= x0 &&
+          point.x <= x1 &&
+          point.y >= y0 &&
+          point.y <= y1
         ) {
           selected.add(point.name);
         }
       });
     });
 
-    console.log("Selected points:", Array.from(selected));
     setSelectedPoints(selected);
+    setBrushBox(bbox);
+  };
+
+  // Handle tooltip events
+  const handleMouseMove = (event, point, group) => {
+    if (isDragging) {
+      hideTooltip();
+      return;
+    }
+
+    // Only show tooltip if there's no brush or if point is within brush
+    if (brushBox && !isPointInBrush(point)) {
+      hideTooltip();
+      return;
+    }
+    
+    event.stopPropagation();
+    if (tooltipTimeout) clearTimeout(tooltipTimeout);
+    
+    const coords = localPoint(event);
+    const data = {
+      group: group,
+      x: point.x.toFixed(2),
+      y: point.y.toFixed(2),
+      name: point.name
+    };
+    
+    showTooltip({
+      tooltipLeft: coords.x,
+      tooltipTop: coords.y,
+      tooltipData: data
+    });
+  };
+
+  const handleMouseLeave = (event) => {
+    event.stopPropagation();
+    tooltipTimeout = window.setTimeout(() => {
+      hideTooltip();
+    }, 300);
   };
 
   return chartSettings.chartData === null || width < 10 ? null : (
-    <>
+    <div style={{ position: 'relative', width, height }}>
       <svg width={width} height={height}>
         <rect x={0} y={0} width={width} height={height} fill={background} />
-        {/* Plot group */}
         <Group top={margin.top} left={margin.left}>
-          {/* Plot hull polygon */}
-          {groups.map((element) => {
-            var pxPoint = chartSettings.chartData[element].map((d) => [
-              xScale(d.x),
-              yScale(d.y),
-            ]);
-            var hull = d3.polygonHull(pxPoint);
-            return (
-              <Polygon
-                points={hull}
-                stroke={colorScale(element)}
-                strokeWidth={1}
-                fill={colorScale(element)}
-                fillOpacity={0.2}
-              />
-            );
-          })}
-          {/* Plot points */}
-          {groups.map((element) =>
-            chartSettings.chartData[element].map((point, i) => {
+          {/* Brush component first (at the bottom) */}
+          <g className="brush-layer">
+            <Brush
+              xScale={xScale}
+              yScale={yScale}
+              width={xSize}
+              height={ySize}
+              handleSize={8}
+              resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
+              brushDirection="both"
+              initialBrushPosition={{
+                start: { x: 0, y: 0 },
+                end: { x: 0, y: 0 },
+              }}
+              onBrushStart={onBrushStart}
+              onChange={brush => {
+                if (!brush) {
+                  onBrushUpdate(null);
+                  return;
+                }
+                setIsDragging(true);
+                const { x0, x1, y0, y1 } = brush;
+                onBrushUpdate({ x0, x1, y0, y1 });
+              }}
+              onBrushEnd={onBrushEnd}
+              onClick={() => {
+                setSelectedPoints(new Set());
+                setBrushBox(null);
+              }}
+            />
+          </g>
+          
+          {/* Hull polygons with pointer-events:none */}
+          <g 
+            className="hull-layer" 
+            style={{ pointerEvents: 'none' }}
+          >
+            {groups.map((element) => {
+              var pxPoint = chartSettings.chartData[element].map((d) => [
+                xScale(d.x),
+                yScale(d.y),
+              ]);
+              var hull = d3.polygonHull(pxPoint);
               return (
-                <Circle
-                  key={`point-${element}-${i}`}
-                  className="dot"
-                  cx={xScale(point.x)}
-                  cy={yScale(point.y)}
-                  r={pointRadius}
-                  fill={colorScale(element)}
-                />
+                hull && (
+                  <Polygon
+                    key={`hull-${element}`}
+                    points={hull}
+                    stroke={colorScale(element)}
+                    strokeWidth={1}
+                    fill={colorScale(element)}
+                    fillOpacity={0.2}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                )
               );
-            }),
-          )}
-          {/* Brush */}
-          <Brush
-            xScale={xScale}
-            yScale={yScale}
-            width={xSize}
-            height={ySize}
-            handleSize={8}
-            resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
-            brushDirection="both"
-            initialBrushPosition={{
-              start: { x: 0, y: 0 },
-              end: { x: 0, y: 0 },
-            }}
-            onBrushStart={onBrushStart}
-            onChange={brush => {
-              if (!brush) {
-                onBrushUpdate(null);
-                return;
-              }
-              const { x0, x1, y0, y1 } = brush;
-              onBrushUpdate({ x0, x1, y0, y1 });
-            }}
-            onBrushEnd={onBrushEnd}
-            onClick={() => setSelectedPoints(new Set())}
-          />
+            })}
+          </g>
+          
+          {/* Points layer */}
+          <g 
+            className="points-layer"
+            style={{ pointerEvents: 'none' }}
+          >
+            {groups.map((element) =>
+              chartSettings.chartData[element].map((point, i) => {
+                const isSelected = !brushBox || isPointInBrush(point);
+                return (
+                  <Circle
+                    key={`point-${element}-${i}`}
+                    className="dot"
+                    cx={xScale(point.x)}
+                    cy={yScale(point.y)}
+                    r={pointRadius}
+                    fill={colorScale(element)}
+                    opacity={isSelected ? 1 : 0.3}
+                    onMouseMove={(event) => handleMouseMove(event, point, element)}
+                    onMouseLeave={handleMouseLeave}
+                    style={{ 
+                      cursor: isSelected ? 'pointer' : 'default',
+                      pointerEvents: isSelected ? 'visible' : 'none'
+                    }}
+                  />
+                );
+              }),
+            )}
+          </g>
         </Group>
+        
         {/* Legend group */}
         <Group
           top={legendMargin.top}
@@ -185,9 +288,8 @@ function DRScatterPlot({
         >
           {groups.map((element, i) => {
             return (
-              <>
+              <React.Fragment key={`legend-${element}`}>
                 <Circle
-                  key={`legent-point-${element}`}
                   className="dot"
                   cx={0}
                   cy={i * 20}
@@ -197,12 +299,46 @@ function DRScatterPlot({
                 <Text x={12} y={i * 20 + 2} textAnchor="left" fontSize={8}>
                   {element}
                 </Text>
-              </>
+              </React.Fragment>
             );
           })}
         </Group>
       </svg>
-    </>
+
+      {/* Tooltip */}
+      {tooltipData && !isDragging && (
+        <div 
+          style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            height: '100%', 
+            overflow: 'hidden',
+            pointerEvents: 'none'
+          }}
+        >
+          <Tooltip 
+            top={tooltipTop} 
+            left={tooltipLeft} 
+            style={{
+              ...tooltipStyles,
+              whiteSpace: 'nowrap',
+              transform: `translate(-50%, ${tooltipTop < 40 ? 25 : -100}%)`,
+            }}
+          >
+            <div className="text-xs">
+              <div>
+                <strong>Group: {tooltipData.group}</strong>
+              </div>
+              <div>X: {tooltipData.x}</div>
+              <div>Y: {tooltipData.y}</div>
+              {tooltipData.name && <div>Name: {tooltipData.name}</div>}
+            </div>
+          </Tooltip>
+        </div>
+      )}
+    </div>
   );
 }
 
