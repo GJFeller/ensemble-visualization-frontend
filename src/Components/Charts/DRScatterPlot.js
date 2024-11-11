@@ -18,27 +18,22 @@ function DRScatterPlot({
   events = false,
   margin = defaultMargin,
 }) {
-  // Chart sizes and variables
-  const xSize =
-    width > margin.left + margin.right
-      ? width - margin.left - margin.right
-      : width;
-  const ySize =
-    height > margin.bottom + margin.top
-      ? height - margin.bottom - margin.top
-      : height;
+  const xSize = width > margin.left + margin.right ? width - margin.left - margin.right : width;
+  const ySize = height > margin.bottom + margin.top ? height - margin.bottom - margin.top : height;
   const background = "#ffffff";
   const pointRadius = 2;
 
-  // Tooltip variables and styles
   const tooltipStyles = {
     ...defaultStyles,
     backgroundColor: "rgba(0,0,0,0.9)",
     color: "white",
     padding: "8px",
     borderRadius: "4px",
+    zIndex: 1000,
+    position: 'absolute',
+    pointerEvents: 'none',
   };
-  
+
   const {
     showTooltip,
     hideTooltip,
@@ -54,7 +49,6 @@ function DRScatterPlot({
 
   let tooltipTimeout = 0;
 
-  // Clear tooltip timeout on unmount
   useEffect(() => {
     return () => {
       if (tooltipTimeout) clearTimeout(tooltipTimeout);
@@ -76,7 +70,6 @@ function DRScatterPlot({
   for (var item in chartSettings.chartData) {
     groups.push(item);
     if (groupsPoints[item] === undefined) groupsPoints[item] = [];
-    // eslint-disable-next-line no-loop-func
     chartSettings.chartData[item].forEach((simulation) => {
       xMax = Math.max(xMax, simulation.x);
       xMin = Math.min(xMin, simulation.x);
@@ -98,7 +91,6 @@ function DRScatterPlot({
     range: ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"],
   });
 
-  // Check if a point is within the brush selection
   const isPointInBrush = (point) => {
     if (!brushBox) return false;
     const { x0, x1, y0, y1 } = brushBox;
@@ -110,7 +102,6 @@ function DRScatterPlot({
     );
   };
 
-  // Handle brush events
   const onBrushStart = () => {
     setBrushing(true);
     setIsDragging(true);
@@ -121,7 +112,7 @@ function DRScatterPlot({
     setBrushing(false);
     setIsDragging(false);
   };
-  
+
   const onBrushUpdate = (bbox) => {
     if (!bbox) {
       setSelectedPoints(new Set());
@@ -149,22 +140,20 @@ function DRScatterPlot({
     setBrushBox(bbox);
   };
 
-  // Handle tooltip events
   const handleMouseMove = (event, point, group) => {
     if (isDragging) {
       hideTooltip();
       return;
     }
 
-    // Only show tooltip if there's no brush or if point is within brush
     if (brushBox && !isPointInBrush(point)) {
       hideTooltip();
       return;
     }
-    
+
     event.stopPropagation();
     if (tooltipTimeout) clearTimeout(tooltipTimeout);
-    
+
     const coords = localPoint(event);
     const data = {
       group: group,
@@ -172,7 +161,7 @@ function DRScatterPlot({
       y: point.y.toFixed(2),
       name: point.name
     };
-    
+
     showTooltip({
       tooltipLeft: coords.x,
       tooltipTop: coords.y,
@@ -187,12 +176,29 @@ function DRScatterPlot({
     }, 300);
   };
 
+  // Container styles
+  const chartContainerStyle = {
+    position: 'relative',
+    width,
+    height,
+    overflow: 'hidden', // Prevents scrollbars
+  };
+
+  const tooltipContainerStyle = {
+    position: 'fixed', // Changed from 'absolute' to 'fixed'
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
+    overflow: 'visible', // Ensures tooltip can overflow without scrollbars
+  };
+
   return chartSettings.chartData === null || width < 10 ? null : (
-    <div style={{ position: 'relative', width, height }}>
+    <div style={chartContainerStyle}>
       <svg width={width} height={height}>
         <rect x={0} y={0} width={width} height={height} fill={background} />
         <Group top={margin.top} left={margin.left}>
-          {/* Brush component first (at the bottom) */}
           <g className="brush-layer">
             <Brush
               xScale={xScale}
@@ -224,11 +230,7 @@ function DRScatterPlot({
             />
           </g>
           
-          {/* Hull polygons with pointer-events:none */}
-          <g 
-            className="hull-layer" 
-            style={{ pointerEvents: 'none' }}
-          >
+          <g className="hull-layer" style={{ pointerEvents: 'none' }}>
             {groups.map((element) => {
               var pxPoint = chartSettings.chartData[element].map((d) => [
                 xScale(d.x),
@@ -251,11 +253,7 @@ function DRScatterPlot({
             })}
           </g>
           
-          {/* Points layer */}
-          <g 
-            className="points-layer"
-            style={{ pointerEvents: 'none' }}
-          >
+          <g className="points-layer" style={{ pointerEvents: 'none' }}>
             {groups.map((element) =>
               chartSettings.chartData[element].map((point, i) => {
                 const isSelected = !brushBox || isPointInBrush(point);
@@ -276,56 +274,38 @@ function DRScatterPlot({
                     }}
                   />
                 );
-              }),
+              })
             )}
           </g>
         </Group>
         
-        {/* Legend group */}
         <Group
           top={legendMargin.top}
           left={margin.left + xSize + legendMargin.left}
         >
-          {groups.map((element, i) => {
-            return (
-              <React.Fragment key={`legend-${element}`}>
-                <Circle
-                  className="dot"
-                  cx={0}
-                  cy={i * 20}
-                  r={7}
-                  fill={colorScale(element)}
-                />
-                <Text x={12} y={i * 20 + 2} textAnchor="left" fontSize={8}>
-                  {element}
-                </Text>
-              </React.Fragment>
-            );
-          })}
+          {groups.map((element, i) => (
+            <React.Fragment key={`legend-${element}`}>
+              <Circle
+                className="dot"
+                cx={0}
+                cy={i * 20}
+                r={7}
+                fill={colorScale(element)}
+              />
+              <Text x={12} y={i * 20 + 2} textAnchor="left" fontSize={8}>
+                {element}
+              </Text>
+            </React.Fragment>
+          ))}
         </Group>
       </svg>
 
-      {/* Tooltip */}
       {tooltipData && !isDragging && (
-        <div 
-          style={{ 
-            position: 'absolute', 
-            top: 0, 
-            left: 0, 
-            width: '100%', 
-            height: '100%', 
-            overflow: 'hidden',
-            pointerEvents: 'none'
-          }}
-        >
+        <div style={tooltipContainerStyle}>
           <Tooltip 
             top={tooltipTop} 
             left={tooltipLeft} 
-            style={{
-              ...tooltipStyles,
-              whiteSpace: 'nowrap',
-              transform: `translate(-50%, ${tooltipTop < 40 ? 25 : -100}%)`,
-            }}
+            style={tooltipStyles}
           >
             <div className="text-xs">
               <div>
