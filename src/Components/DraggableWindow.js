@@ -15,6 +15,7 @@ import CorrelationMatrix from "./Charts/CorrelationMatrix";
 import DRScatterPlot from "./Charts/DRScatterPlot";
 
 import "@xyflow/react/dist/base.css";
+import TemporalPlot from "./Charts/TemporalPlot";
 
 const MINWIDTH = 200,
   MINHEIGHT = 200;
@@ -68,19 +69,9 @@ const DraggableWindow = ({ data }) => {
         minWidth={MINWIDTH}
         minHeight={MINHEIGHT}
         onResizeEnd={() => {
-          if (
-            currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX &&
-            currentChartSettings.chartType !== ChartType.DR
-          ) {
-            ChartRender.drawChart(
-              currentChartSettings.chartId,
-              currentChartSettings,
-            );
-          } else {
             const plotWidth = container.current.offsetWidth;
             const plotHeight = container.current.offsetHeight;
             setDimensions([plotWidth, plotHeight]);
-          }
         }}
       />
       <div
@@ -140,7 +131,11 @@ const DraggableWindow = ({ data }) => {
               chartSettings={currentChartSettings}
             />
           ) : (
-            <svg id={currentChartSettings.chartId}></svg>
+            <TemporalPlot
+              width={dimensions[0]}
+              height={dimensions[1]}
+              chartSettings={currentChartSettings}
+            />
           )}
         </div>
       </div>
