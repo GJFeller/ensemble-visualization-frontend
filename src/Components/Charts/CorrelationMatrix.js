@@ -1,191 +1,212 @@
-import React, { useEffect, useRef, useState, memo } from "react";
-import { Group } from "@visx/group";
-import { scaleLinear } from "@visx/scale";
-import { useTooltip, Tooltip, defaultStyles } from "@visx/tooltip";
-import { Text } from "@visx/text";
-import { localPoint } from "@visx/event";
+import React, { memo, useMemo } from 'react';
+import { Group } from '@visx/group';
+import { scaleLinear } from '@visx/scale';
+import { useTooltip, Tooltip } from '@visx/tooltip';
+import { Text } from '@visx/text';
+import { localPoint } from '@visx/event';
 
-function max(data, value) {
-  return Math.max(...data.map(value));
-}
+const DEFAULT_MARGIN = { top: 10, left: 10, right: 40, bottom: 10 };
+const LEGEND_MARGIN = { top: 10, left: 10, right: 10, bottom: 10 };
+const TOOLTIP_STYLES = {
+  backgroundColor: 'rgba(0,0,0,0.9)',
+  color: 'white',
+  padding: '4px 6px',
+  borderRadius: '3px',
+  fontSize: '11px',
+  lineHeight: '1.2',
+  pointerEvents: 'none',
+  position: 'absolute',
+  zIndex: 1000
+};
+const BACKGROUND_COLOR = 'transparent';
+const TOOLTIP_HIDE_DELAY = 300;
 
-function min(data, value) {
-  return Math.min(...data.map(value));
-}
+const ColorGradient = memo(() => (
+  <defs>
+    <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style={{ stopColor: 'tomato' }} />
+      <stop offset="50%" style={{ stopColor: 'white' }} />
+      <stop offset="100%" style={{ stopColor: 'steelblue' }} />
+    </linearGradient>
+  </defs>
+));
 
-const defaultMargin = { top: 10, left: 10, right: 40, bottom: 10 };
-const legendMargin = { top: 10, left: 10, right: 10, bottom: 10 };
+const LegendText = memo(({ x, y, value }) => (
+  <Text x={x} y={y} textAnchor="middle" fontSize={10}>
+    {value}
+  </Text>
+));
 
-function CorrelationMatrix({
+const MatrixCell = memo(({ 
+  row, 
+  col, 
+  value, 
+  x, 
+  y, 
+  width, 
+  height, 
+  color, 
+  events,
+  onTooltipShow,
+  onTooltipHide 
+}) => (
+  <rect
+    x={x}
+    y={y}
+    width={width}
+    height={height}
+    fill={color}
+    stroke="#ffffff"
+    onClick={() => events && alert(`clicked: ${JSON.stringify(value)}`)}
+    onMouseLeave={onTooltipHide}
+    onMouseMove={(event) => {
+      const coords = localPoint(event);
+      onTooltipShow({
+        row,
+        col,
+        value,
+        coords
+      });
+    }}
+  />
+));
+
+const Legend = memo(({ width, height, ySize, xOffset }) => (
+  <Group top={LEGEND_MARGIN.top} left={xOffset}>
+    <ColorGradient />
+    <rect
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      fill="url(#bar-gradient)"
+      stroke="#ffffff"
+    />
+    <LegendText x={width + 10} y={5} value="-1.0" />
+    <LegendText x={width + 10} y={ySize / 2 + 5} value="0.0" />
+    <LegendText x={width + 10} y={ySize + 2.5} value="1.0" />
+  </Group>
+));
+
+const TooltipContent = memo(({ data }) => (
+  <div style={{ whiteSpace: 'nowrap' }}>
+    <div>Row: {data.row}</div>
+    <div>Column: {data.col}</div>
+    <div>Value: {data.value.toFixed(3)}</div>
+  </div>
+));
+
+const CorrelationMatrix = ({
   width,
   height,
   chartSettings,
   events = false,
-  margin = defaultMargin,
+  margin = DEFAULT_MARGIN,
   gap = 1,
-}) {
-  // Chart sizes and variables
-  const xSize =
-    width > margin.left + margin.right
-      ? width - margin.left - margin.right
-      : width;
-  const ySize =
-    height > margin.bottom + margin.top
-      ? height - margin.bottom - margin.top
-      : height;
+}) => {
+  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip();
 
-  let rectWidth = 0;
-  let rectHeight = 0;
-  let variables = [];
-  if (
-    chartSettings.chartData !== null &&
-    chartSettings.chartData.length !== 0
-  ) {
-    variables = Object.keys(chartSettings.chartData);
-    rectWidth = (xSize - gap * (variables.length - 1)) / variables.length;
-    rectHeight = (ySize - gap * (variables.length - 1)) / variables.length;
-  }
-  // Legend sizes
-  const legendRectWidth =
-    (margin.right - legendMargin.left - legendMargin.right) / 2;
-  const legendRectHeight = ySize;
+  // Memoize calculations
+  const { xSize, ySize, rectWidth, rectHeight, variables, legendRectWidth, legendRectHeight, legendXOffset } = useMemo(() => {
+    const xSize = Math.max(0, width - margin.left - margin.right);
+    const ySize = Math.max(0, height - margin.bottom - margin.top);
+    
+    const variables = chartSettings.chartData ? Object.keys(chartSettings.chartData) : [];
+    const rectWidth = variables.length ? (xSize - gap * (variables.length - 1)) / variables.length : 0;
+    const rectHeight = variables.length ? (ySize - gap * (variables.length - 1)) / variables.length : 0;
+    
+    const legendRectWidth = (margin.right - LEGEND_MARGIN.left - LEGEND_MARGIN.right) / 2;
+    const legendRectHeight = ySize;
+    const legendXOffset = margin.left + xSize + LEGEND_MARGIN.left;
 
-  // Color scale
-  const colorScale = scaleLinear({
-    domain: [-1, 0, 1],
-    range: ["tomato", "white", "steelblue"],
-  });
-  const background = "#ffffff";
+    return { xSize, ySize, rectWidth, rectHeight, variables, legendRectWidth, legendRectHeight, legendXOffset };
+  }, [width, height, margin, gap, chartSettings.chartData]);
 
-  // Tooltip variables
-  let tooltipTimeout = 0;
-  const tooltipStyles = {
-    ...defaultStyles,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    color: "white",
-    padding: "8px",
-    borderRadius: "4px",
+  const colorScale = useMemo(() => 
+    scaleLinear({
+      domain: [-1, 0, 1],
+      range: ['tomato', 'white', 'steelblue']
+    })
+  , []);
+
+  const handleTooltipShow = ({ row, col, value, coords }) => {
+    if (!coords) return;
+    
+    showTooltip({
+      tooltipData: { row, col, value },
+      tooltipTop: coords.y,
+      tooltipLeft: coords.x,
+    });
   };
-  const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } =
-    useTooltip();
 
-  //useEffect(() => {
-  //  fetch(process.env.REACT_APP_BACKEND_URL + chartSettings.getRestUrl())
-  //    .then((res) => {
-  //      return res.json();
-  //    })
-  //    .then((dataResponse) => {
-  //      chartSettings.chartData = dataResponse;
-  //    });
-  //}, [chartSettings]);
+  const handleTooltipHide = () => {
+    hideTooltip();
+  };
 
-  return chartSettings.chartData === null || width < 10 ? null : (
-    <>
-      <svg width={width} height={height}>
-        <rect x={0} y={0} width={width} height={height} fill={background} />
+  if (!chartSettings.chartData || width < 10) return null;
+
+  return (
+    <div 
+      style={{ 
+        position: 'relative',
+        width: width,
+        height: height,
+        overflow: 'hidden'
+      }}
+    >
+      <svg 
+        width="100%" 
+        height="100%" 
+        style={{ 
+          background: 'white',
+          position: 'absolute',
+          top: 0,
+          left: 0
+        }}
+      >
         <Group top={margin.top} left={margin.left}>
-          {/* Create correlation matrix cells */}
           {variables.map((row, i) =>
             variables.map((col, j) => (
-              <g key={`cell-${i}-${j}`}>
-                <rect
-                  x={j * rectWidth + j * gap}
-                  y={i * rectHeight + i * gap}
-                  width={rectWidth}
-                  height={rectHeight}
-                  fill={colorScale(chartSettings.chartData[row][col])}
-                  stroke="#ffffff"
-                  onClick={() => {
-                    if (events)
-                      alert(
-                        `clicked: ${JSON.stringify(chartSettings.chartData[row][col])}`,
-                      );
-                  }}
-                  onMouseLeave={() => {
-                    tooltipTimeout = window.setTimeout(() => {
-                      hideTooltip();
-                    }, 300);
-                  }}
-                  onMouseMove={(event) => {
-                    if (tooltipTimeout) clearTimeout(tooltipTimeout);
-                    const coords = localPoint(event);
-                    let data = {};
-                    data.row = row;
-                    data.col = col;
-                    data.value = chartSettings.chartData[row][col];
-                    showTooltip({
-                      tooltipData: data,
-                      tooltipTop: coords.y,
-                      tooltipLeft: coords.x,
-                    });
-                  }}
-                />
-              </g>
-            )),
+              <MatrixCell
+                key={`cell-${i}-${j}`}
+                row={row}
+                col={col}
+                value={chartSettings.chartData[row][col]}
+                x={j * rectWidth + j * gap}
+                y={i * rectHeight + i * gap}
+                width={rectWidth}
+                height={rectHeight}
+                color={colorScale(chartSettings.chartData[row][col])}
+                events={events}
+                onTooltipShow={handleTooltipShow}
+                onTooltipHide={handleTooltipHide}
+              />
+            ))
           )}
         </Group>
-        <Group
-          top={legendMargin.top}
-          left={margin.left + xSize + legendMargin.left}
-        >
-          <defs>
-            <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: "tomato" }} />
-              <stop offset="50%" style={{ stopColor: "white" }} />
-              <stop offset="100%" style={{ stopColor: "steelblue" }} />
-            </linearGradient>
-          </defs>
-          <rect
-            x={0}
-            y={0}
-            width={legendRectWidth}
-            height={legendRectHeight}
-            fill={"url(#bar-gradient)"}
-            stroke="#ffffff"
-          ></rect>
-          <Text
-            x={legendRectWidth + 10}
-            y={5}
-            textAnchor="middle"
-            fontSize={10}
-          >
-            -1.0
-          </Text>
-          <Text
-            x={legendRectWidth + 10}
-            y={ySize / 2 + 5}
-            textAnchor="middle"
-            fontSize={10}
-          >
-            0.0
-          </Text>
-          <Text
-            x={legendRectWidth + 10}
-            y={ySize + 2.5}
-            textAnchor="middle"
-            fontSize={10}
-          >
-            1.0
-          </Text>
-        </Group>
+        <Legend 
+          width={legendRectWidth} 
+          height={legendRectHeight} 
+          ySize={ySize}
+          xOffset={legendXOffset}
+        />
       </svg>
 
-      {/* Tooltip */}
       {tooltipData && (
-        <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
-          <div>
-            <div>
-              <strong className="text-xs">Row: {tooltipData.row}</strong>
-            </div>
-            <div>
-              <strong className="text-xs">Column: {tooltipData.col}</strong>
-            </div>
-            <div className="text-xs">Value: {tooltipData.value}</div>
-          </div>
-        </Tooltip>
+        <div
+          style={{
+            position: 'absolute',
+            left: tooltipLeft,
+            top: tooltipTop,
+            transform: 'translate(-50%, -100%)',
+            ...TOOLTIP_STYLES
+          }}
+        >
+          <TooltipContent data={tooltipData} />
+        </div>
       )}
-    </>
+    </div>
   );
-}
+};
 
-export default CorrelationMatrix;
+export default memo(CorrelationMatrix);
