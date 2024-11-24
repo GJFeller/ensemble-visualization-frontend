@@ -1,5 +1,4 @@
 import React, { useEffect, useCallback } from "react";
-//import DraggableWindow from "../../Components/DraggableWindow";
 import DraggableWindow from "../../Components/DraggableWindow";
 import {
   ReactFlow,
@@ -10,24 +9,8 @@ import {
   Controls,
   Background,
 } from "@xyflow/react";
-//import Flowchart from "../../Components/Flowchart";
 
 import "@xyflow/react/dist/base.css";
-
-/*const DraggableWindowList = React.memo(({ vizTreeRootList, closeWindow }) => {
-  return (
-    <>
-      {vizTreeRootList.map((element) => (
-        <DraggableWindow
-          key={"viz-" + element.chartId}
-          id={"viz-" + element.chartId}
-          chartSettings={element}
-          closeWindow={closeWindow}
-        ></DraggableWindow>
-      ))}
-    </>
-  );
-});*/
 
 const nodeTypes = { draggableWindow: DraggableWindow };
 
@@ -41,7 +24,6 @@ const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
   );
 
   useEffect(() => {
-    console.log(Date());
     let nodeList = [];
     for (const chartSettings of vizTreeRootList) {
       nodeList.push({
