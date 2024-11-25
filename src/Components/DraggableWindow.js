@@ -6,7 +6,7 @@ import {
   chartOptions,
 } from "../utils/ChartUtils";
 
-import { Handle, Position, NodeResizer } from "@xyflow/react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
 import closeIcon from "../Images/close.png";
 import optionsIcon from "../Images/options.png";
 import parentIcon from "../Images/arrow-small-up.png";
@@ -65,6 +65,61 @@ const DraggableWindow = ({ data }) => {
 
   return (
     <>
+      {/* Top handles */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="top-source"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="top-target"
+      />
+      
+      {/* Right handles */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="right-source"
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="right-target"
+      />
+      
+      {/* Bottom handles */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="bottom-source"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="bottom-target"
+      />
+      
+      {/* Left handles */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="left-source"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="left-target"
+      />
       <NodeResizer
         minWidth={MINWIDTH}
         minHeight={MINHEIGHT}
