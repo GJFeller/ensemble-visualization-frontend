@@ -9,11 +9,27 @@ import {
   Controls,
   reconnectEdge,
   Background,
+  MarkerType,
 } from "@xyflow/react";
 
 import "@xyflow/react/dist/base.css";
 
 const nodeTypes = { draggableWindow: memo(DraggableWindow) };
+
+// Default edge settings with arrow
+const defaultEdgeOptions = {
+  type: "smoothstep", // You can also use 'step' or 'straight'
+  markerEnd: {
+    type: MarkerType.Arrow,
+    width: 20,
+    height: 20,
+    color: "#888",
+  },
+  style: {
+    strokeWidth: 2,
+    stroke: "#888",
+  },
+};
 
 const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
   const edgeReconnectSuccessful = useRef(true);
@@ -21,24 +37,31 @@ const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
+    (params) => {
+      // Add default edge options to new connections
+      const edgeWithArrow = {
+        ...params,
+        ...defaultEdgeOptions,
+      };
+      setEdges((eds) => addEdge(edgeWithArrow, eds));
+    },
     [setEdges],
   );
 
   const onReconnectStart = useCallback(() => {
     edgeReconnectSuccessful.current = false;
   }, []);
- 
+
   const onReconnect = useCallback((oldEdge, newConnection) => {
     edgeReconnectSuccessful.current = true;
     setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
   }, []);
- 
+
   const onReconnectEnd = useCallback((_, edge) => {
     if (!edgeReconnectSuccessful.current) {
       setEdges((eds) => eds.filter((e) => e.id !== edge.id));
     }
- 
+
     edgeReconnectSuccessful.current = true;
   }, []);
 

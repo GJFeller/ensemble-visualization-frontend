@@ -67,66 +67,67 @@ const DraggableWindow = ({ data }) => {
     <>
       {/* Top handles */}
       <Handle
-        type="source"
-        position={Position.Top}
-        className="w-2 h-2 border-2 border-black bg-white !z-50"
-        id="top-source"
-      />
-      <Handle
         type="target"
         position={Position.Top}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
         id="top-target"
       />
-      
-      {/* Right handles */}
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Top}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
-        id="right-source"
+        id="top-source"
       />
+
+      {/* Right handles */}
       <Handle
         type="target"
         position={Position.Right}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
         id="right-target"
       />
-      
-      {/* Bottom handles */}
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
-        id="bottom-source"
+        id="right-source"
       />
+
+      {/* Bottom handles */}
       <Handle
         type="target"
         position={Position.Bottom}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
         id="bottom-target"
       />
-      
-      {/* Left handles */}
       <Handle
         type="source"
-        position={Position.Left}
+        position={Position.Bottom}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
-        id="left-source"
+        id="bottom-source"
       />
+
+      {/* Left handles */}
       <Handle
         type="target"
         position={Position.Left}
         className="w-2 h-2 border-2 border-black bg-white !z-50"
         id="left-target"
       />
+      <Handle
+        type="source"
+        position={Position.Left}
+        className="w-2 h-2 border-2 border-black bg-white !z-50"
+        id="left-source"
+      />
+
       <NodeResizer
         minWidth={MINWIDTH}
         minHeight={MINHEIGHT}
         onResizeEnd={() => {
-            const plotWidth = container.current.offsetWidth;
-            const plotHeight = container.current.offsetHeight;
-            setDimensions([plotWidth, plotHeight]);
+          const plotWidth = container.current.offsetWidth;
+          const plotHeight = container.current.offsetHeight;
+          setDimensions([plotWidth, plotHeight]);
         }}
       />
       <div
