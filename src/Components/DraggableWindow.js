@@ -13,9 +13,9 @@ import parentIcon from "../Images/arrow-small-up.png";
 import ModalChartSettings from "./ModalChartSettings";
 import CorrelationMatrix from "./Charts/CorrelationMatrix";
 import DRScatterPlot from "./Charts/DRScatterPlot";
+import TemporalPlot from "./Charts/TemporalPlot";
 
 import "@xyflow/react/dist/base.css";
-import TemporalPlot from "./Charts/TemporalPlot";
 
 const MINWIDTH = 200,
   MINHEIGHT = 200;
@@ -54,12 +54,6 @@ const DraggableWindow = ({ data }) => {
       })
       .then((dataResponse) => {
         currentChartSettings.chartData = dataResponse;
-        if (currentChartSettings.chartType !== ChartType.CORRELATIONMATRIX) {
-          ChartRender.drawChart(
-            currentChartSettings.chartId,
-            currentChartSettings,
-          );
-        }
       });
   }, [currentChartSettings]);
 
@@ -201,6 +195,7 @@ const DraggableWindow = ({ data }) => {
         title={modalTitle}
         chartSettings={currentChartSettings}
         saveChartSettings={saveChartSettings}
+        dimensions={dimensions}
       ></ModalChartSettings>
     </>
   );
