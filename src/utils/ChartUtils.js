@@ -73,6 +73,7 @@ export class ChartSettings {
   #chartTitle = "Title";
   #chartId = "";
   #chartData = null;
+  #filteredData = null;
 
   #drSettings = {
     drMethod: chartOptions.drMethodList[0],
@@ -84,6 +85,14 @@ export class ChartSettings {
     logScale: false,
     drawAreas: true,
   };
+
+  #interactiveFilters = {
+    simulationList: new Set(),
+    brushBox: null,
+    ensembleList: new Set(),
+    variableList: new Set(),
+    timestepList: new Set(),
+  }
 
   #ensembleList = [];
   #simulationList = [];
@@ -111,6 +120,9 @@ export class ChartSettings {
   get temporalSettings() {
     return this.#temporalSettings;
   }
+  get interactiveFilters() {
+    return this.#interactiveFilters;
+  }
   get chartType() {
     return this.#chartType;
   }
@@ -122,6 +134,9 @@ export class ChartSettings {
   }
   get chartData() {
     return this.#chartData;
+  }
+  get filteredData() {
+    return this.#filteredData;
   }
   get ensembleList() {
     return this.#ensembleList;
@@ -148,11 +163,17 @@ export class ChartSettings {
   set temporalSettings(temporalSettings) {
     this.#temporalSettings = temporalSettings;
   }
+  set interactiveFilters(interactiveFilters) {
+    this.#interactiveFilters = interactiveFilters;
+  }
   set chartType(chartType) {
     this.#chartType = chartType;
   }
   set chartData(chartData) {
     this.#chartData = chartData;
+  }
+  set filteredData(data) {
+    this.#filteredData = data;
   }
   set ensembleList(ensembleList) {
     this.#ensembleList = ensembleList;
@@ -192,6 +213,57 @@ export class ChartSettings {
     }
   }
 
+  // Method to update data based on source window selections
+  updateFromSourceSelection(sourceChartSettings) {
+    if (!sourceChartSettings?.interactiveFilters) return;
+
+    const { simulationList, brushBox } = sourceChartSettings.interactiveFilters;
+    
+    // If no filters are active, use full dataset
+    if (!simulationList.size && !brushBox) {
+      this.filteredData = null;
+      return;
+    }
+
+    // Create filtered version of the data based on source selections
+    const filteredData = {};
+    
+    // Filter based on simulation names if any are selected
+    if (simulationList.size > 0) {
+      Object.entries(this.chartData || {}).forEach(([ensemble, data]) => {
+        if (this.chartType === ChartType.DR) {
+          filteredData[ensemble] = data.filter(point => 
+            simulationList.has(point.name)
+          );
+        } else if (this.chartType === ChartType.TEMPORAL) {
+          filteredData[ensemble] = {};
+          Object.entries(data).forEach(([simulation, points]) => {
+            if (simulationList.has(simulation)) {
+              filteredData[ensemble][simulation] = points;
+            }
+          });
+        }
+      });
+    }
+    
+    // Additional filtering based on brush box if present
+    if (brushBox) {
+      const { x0, x1, y0, y1 } = brushBox;
+      Object.entries(this.chartData || {}).forEach(([ensemble, data]) => {
+        if (this.chartType === ChartType.DR) {
+          if (!filteredData[ensemble]) filteredData[ensemble] = [];
+          const brushedPoints = data.filter(point =>
+            point.x >= x0 && point.x <= x1 && 
+            point.y >= y0 && point.y <= y1
+          );
+          filteredData[ensemble].push(...brushedPoints);
+        }
+      });
+    }
+
+    this.filteredData = filteredData;
+  }
+
   clone = function () {
     let clonedInstance = new ChartSettings(
       this.chartType,
@@ -202,6 +274,7 @@ export class ChartSettings {
     clonedInstance.temporalSettings = JSON.parse(
       JSON.stringify(this.temporalSettings),
     );
+    clonedInstance.interactiveFilters = JSON.parse(JSON.stringify(this.interactiveFilters));
     clonedInstance.chartData = JSON.parse(JSON.stringify(this.chartData));
     return clonedInstance;
   };

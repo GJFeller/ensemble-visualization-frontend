@@ -138,8 +138,8 @@ function DRScatterPlot({
 
   const [brushing, setBrushing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
-  const [selectedPoints, setSelectedPoints] = React.useState(new Set());
-  const [brushBox, setBrushBox] = React.useState(null);
+  const [selectedPoints, setSelectedPoints] = React.useState(chartSettings.interactiveFilters.simulationList);
+  const [brushBox, setBrushBox] = React.useState(chartSettings.interactiveFilters.brushBox);
 
   const handleMouseMove = useCallback((event, point, group) => {
     if (isDragging || (brushBox && !isPointInBrush(point, brushBox))) {
@@ -187,6 +187,9 @@ function DRScatterPlot({
         });
       }
     });
+
+    chartSettings.interactiveFilters.simulationList = selected;
+    chartSettings.interactiveFilters.brushBox = bbox;
 
     setSelectedPoints(selected);
     setBrushBox(bbox);
