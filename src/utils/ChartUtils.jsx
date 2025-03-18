@@ -2,332 +2,12 @@ import * as d3 from "d3";
 import * as utils from "./utils";
 
 /**
- * It connects to the backend to get options for charts which comes from the backend application.
- * E.g. dimensionality reduction techniques, variables from the simulations, etc.
- *
+ * Chart type enumeration
  */
-class ChartOptions {
-  #drMethodList;
-  #ensembleVariableList;
-
-  constructor() {
-    if (ChartOptions.instance) {
-      return ChartOptions.instance;
-    }
-    this.#drMethodList = [];
-    this.#ensembleVariableList = [];
-    ChartOptions.instance = this;
-    return ChartOptions.instance;
-  }
-
-  get drMethodList() {
-    return this.#drMethodList;
-  }
-  get ensembleVariableList() {
-    return this.#ensembleVariableList;
-  }
-
-  async connect() {
-    if (!this.#drMethodList.length) {
-      try {
-        let response = await fetch(
-          process.env.REACT_APP_BACKEND_URL + "/dr-methods",
-        );
-        this.#drMethodList = await response.json();
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    if (!this.#ensembleVariableList.length) {
-      try {
-        let response = await fetch(
-          process.env.REACT_APP_BACKEND_URL + "/variables",
-        );
-        this.#ensembleVariableList = await response.json();
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    return this;
-  }
-
-  getOptions(chartType) {
-    switch (chartType) {
-      case ChartType.DR:
-        return this.drMethodList;
-      case ChartType.TEMPORAL:
-        return this.ensembleVariableList;
-      default:
-        throw new Error("Chart type does not exist");
-    }
-  }
-}
-
-export let chartOptions = await new ChartOptions().connect();
-
-/**
- * It stores settings used by a chart.
- */
-export class ChartSettings {
-  #chartType = ChartType.DR;
-  #chartTitle = "Title";
-  #chartId = "";
-  #chartData = null;
-  #filteredData = null;
-
-  #drSettings = {
-    drMethod: chartOptions.drMethodList[0],
-    showConvexHull: true,
-  };
-
-  #temporalSettings = {
-    temporalVariable: chartOptions.ensembleVariableList[0],
-    logScale: false,
-    drawAreas: true,
-  };
-
-  #interactiveFilters = {
-    simulationList: new Set(),
-    brushBox: null,
-    ensembleList: new Set(),
-    variableList: new Set(),
-    timestepList: new Set(),
-  }
-
-  #ensembleList = [];
-  #simulationList = [];
-
-  #parentChartSettings = null;
-  #childrenChartSettings = [];
-
-  constructor(
-    chartType = ChartType.DR,
-    chartTitle = "Title",
-    chartId = "",
-    chartData = null,
-    parentChartSettings = null,
-  ) {
-    this.#chartType = chartType;
-    this.#chartTitle = chartTitle;
-    this.#chartId = chartId;
-    this.#chartData = chartData;
-    this.#parentChartSettings = parentChartSettings;
-  }
-
-  get drSettings() {
-    return this.#drSettings;
-  }
-  get temporalSettings() {
-    return this.#temporalSettings;
-  }
-  get interactiveFilters() {
-    return this.#interactiveFilters;
-  }
-  get chartType() {
-    return this.#chartType;
-  }
-  get chartTitle() {
-    return this.#chartTitle;
-  }
-  get chartId() {
-    return this.#chartId;
-  }
-  get chartData() {
-    return this.#chartData;
-  }
-  get filteredData() {
-    return this.#filteredData;
-  }
-  get ensembleList() {
-    return this.#ensembleList;
-  }
-  get simulationList() {
-    return this.#simulationList;
-  }
-  get parentChartSettings() {
-    return this.#parentChartSettings;
-  }
-  get childrenChartSettings() {
-    return this.#childrenChartSettings;
-  }
-
-  set chartTitle(chartTitle) {
-    this.#chartTitle = chartTitle;
-  }
-  set chartId(chartId) {
-    this.#chartId = chartId;
-  }
-  set drSettings(drSettings) {
-    this.#drSettings = drSettings;
-  }
-  set temporalSettings(temporalSettings) {
-    this.#temporalSettings = temporalSettings;
-  }
-  set interactiveFilters(interactiveFilters) {
-    this.#interactiveFilters = interactiveFilters;
-  }
-  set chartType(chartType) {
-    this.#chartType = chartType;
-  }
-  set chartData(chartData) {
-    this.#chartData = chartData;
-  }
-  set filteredData(data) {
-    this.#filteredData = data;
-  }
-  set ensembleList(ensembleList) {
-    this.#ensembleList = ensembleList;
-  }
-  set simulationList(simulationList) {
-    this.#simulationList = simulationList;
-  }
-  set parentChartSettings(parentChartSettings) {
-    this.#parentChartSettings = parentChartSettings;
-  }
-  set childrenChartSettings(childrenChartSettings) {
-    this.#childrenChartSettings = childrenChartSettings;
-  }
-
-  static getSettings() {
-    switch (this.chartType) {
-      case ChartType.DR:
-        return this.drSettings;
-      case ChartType.TEMPORAL:
-        return this.temporalSettings;
-      default:
-        throw new Error("Chart type does not exist");
-    }
-  }
-
-  static getChartSettingsList() {
-    if (this.childrenChartSettings.length === 0) {
-      return [this];
-    } else {
-      let childrenList = [];
-      for (const childChartSettings in this.childrenChartSettings) {
-        let childList = childChartSettings.getChartSettingsList();
-        childrenList.concat(childList);
-      }
-      let chartSettingsList = [this];
-      return chartSettingsList.concat(childrenList);
-    }
-  }
-
-  // Method to update data based on source window selections
-  updateFromSourceSelection(sourceChartSettings) {
-    if (!sourceChartSettings?.interactiveFilters) return;
-
-    const { simulationList, brushBox } = sourceChartSettings.interactiveFilters;
-    
-    // If no filters are active, use full dataset
-    if (!simulationList.size && !brushBox) {
-      this.filteredData = null;
-      return;
-    }
-
-    // Create filtered version of the data based on source selections
-    const filteredData = {};
-    
-    // Filter based on simulation names if any are selected
-    if (simulationList.size > 0) {
-      Object.entries(this.chartData || {}).forEach(([ensemble, data]) => {
-        if (this.chartType === ChartType.DR) {
-          filteredData[ensemble] = data.filter(point => 
-            simulationList.has(point.name)
-          );
-        } else if (this.chartType === ChartType.TEMPORAL) {
-          filteredData[ensemble] = {};
-          Object.entries(data).forEach(([simulation, points]) => {
-            if (simulationList.has(simulation)) {
-              filteredData[ensemble][simulation] = points;
-            }
-          });
-        }
-      });
-    }
-    
-    // Additional filtering based on brush box if present
-    if (brushBox) {
-      const { x0, x1, y0, y1 } = brushBox;
-      Object.entries(this.chartData || {}).forEach(([ensemble, data]) => {
-        if (this.chartType === ChartType.DR) {
-          if (!filteredData[ensemble]) filteredData[ensemble] = [];
-          const brushedPoints = data.filter(point =>
-            point.x >= x0 && point.x <= x1 && 
-            point.y >= y0 && point.y <= y1
-          );
-          filteredData[ensemble].push(...brushedPoints);
-        }
-      });
-    }
-
-    this.filteredData = filteredData;
-  }
-
-  clone = function () {
-    let clonedInstance = new ChartSettings(
-      this.chartType,
-      this.chartTitle,
-      this.chartId,
-    );
-    clonedInstance.drSettings = JSON.parse(JSON.stringify(this.drSettings));
-    clonedInstance.temporalSettings = JSON.parse(
-      JSON.stringify(this.temporalSettings),
-    );
-    clonedInstance.interactiveFilters = JSON.parse(JSON.stringify(this.interactiveFilters));
-    clonedInstance.chartData = JSON.parse(JSON.stringify(this.chartData));
-    return clonedInstance;
-  };
-
-  getRestUrl = function () {
-    let restUrl = "/";
-    switch (this.chartType) {
-      case ChartType.DR:
-        restUrl = restUrl.concat("dimensional-reduction");
-        restUrl = restUrl.concat("?method=", this.drSettings.drMethod);
-        for (const ensemble of this.ensembleList)
-          restUrl = restUrl.concat("&ensemble=", ensemble);
-        for (const simulation of this.simulationList)
-          restUrl = restUrl.concat("&simulation=", simulation);
-        return restUrl;
-      case ChartType.TEMPORAL:
-        restUrl = restUrl.concat("temporal-evolution");
-        restUrl = restUrl.concat(
-          "?variable=",
-          this.temporalSettings.temporalVariable,
-        );
-        for (const ensemble of this.ensembleList)
-          restUrl = restUrl.concat("&ensemble=", ensemble);
-        for (const simulation of this.simulationList)
-          restUrl = restUrl.concat("&simulation=", simulation);
-        return restUrl;
-      case ChartType.CORRELATIONMATRIX:
-        restUrl = restUrl.concat("correlation-matrix");
-        for (const ensemble of this.ensembleList)
-          restUrl = restUrl.concat("&ensemble=", ensemble);
-        for (const simulation of this.simulationList)
-          restUrl = restUrl.concat("&simulation=", simulation);
-        return restUrl;
-      default:
-        throw new Error("Chart type does not exist");
-    }
-  };
-}
-
 export class ChartType {
-  static #_DR = 0;
-  static #_TEMPORAL = 1;
-  static #_CORRMATRIX = 2;
-
-  static get DR() {
-    return this.#_DR;
-  }
-  static get TEMPORAL() {
-    return this.#_TEMPORAL;
-  }
-  static get CORRELATIONMATRIX() {
-    return this.#_CORRMATRIX;
-  }
+  static DR = 0;
+  static TEMPORAL = 1;
+  static CORRELATIONMATRIX = 2;
 
   static fromChartTypeString(chartTypeString) {
     if (chartTypeString === "Dimensional Reduction") return this.DR;
@@ -345,11 +25,79 @@ export class ChartType {
   }
 }
 
-d3.selection.prototype.moveToFront = function () {
-  d3.select(this).raise();
-  return this;
-};
+/**
+ * Chart options singleton that connects to the backend
+ */
+class ChartOptions {
+  #drMethodList;
+  #ensembleVariableList;
 
+  constructor() {
+    this.#drMethodList = ["PCA", "TSNE", "UMAP"]; // Default values
+    this.#ensembleVariableList = ["Temperature", "Pressure", "Humidity"]; // Default values
+    
+    // Singleton pattern
+    if (ChartOptions.instance) {
+      return ChartOptions.instance;
+    }
+    ChartOptions.instance = this;
+  }
+
+  get drMethodList() {
+    return this.#drMethodList;
+  }
+  
+  get ensembleVariableList() {
+    return this.#ensembleVariableList;
+  }
+
+  async connect() {
+    if (!this.#drMethodList.length) {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL}/dr-methods`
+        );
+        this.#drMethodList = await response.json();
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    
+    if (!this.#ensembleVariableList.length) {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL}/variables`
+        );
+        this.#ensembleVariableList = await response.json();
+      } catch (err) {
+        console.log(err);
+      }
+    }
+    
+    return this;
+  }
+
+  getOptions(chartType) {
+    switch (chartType) {
+      case ChartType.DR:
+        return this.drMethodList;
+      case ChartType.TEMPORAL:
+        return this.ensembleVariableList;
+      default:
+        throw new Error("Chart type does not exist");
+    }
+  }
+}
+
+// Initialize chart options instead of using top-level await
+export const chartOptions = new ChartOptions();
+
+// Connect in the background without blocking module loading
+chartOptions.connect();
+
+/**
+ * Chart render utility for drawing different types of charts
+ */
 export class ChartRender {
   static drawChart(chartId, chartSettings) {
     switch (chartSettings.chartType) {
@@ -365,14 +113,15 @@ export class ChartRender {
         throw new Error("Chart type does not exist");
     }
   }
+  
   /**
    * Function to draw a timeline chart
    *
    * @param {string} chartId
-   * @param {*} data
+   * @param {object} chartSettings
    */
   static #drawTimeChart(chartId, chartSettings) {
-    let data = chartSettings.chartData;
+    const data = chartSettings.chartData;
     // Get dimensions for the plot
     if (document.getElementById(chartId) === null) return;
     const container = document.getElementById(chartId).parentNode;
@@ -380,22 +129,22 @@ export class ChartRender {
     const legendMargin = { top: 10, right: 5, bottom: 10, left: 10 };
     const plotWidth = container.offsetWidth - margin.left - margin.right;
     const plotHeight = container.offsetHeight - margin.top - margin.bottom;
-    var groups = [];
-    var xMax = -Number.MAX_VALUE,
-      yMax = -Number.MAX_VALUE;
-    var xMin = Number.MAX_VALUE,
-      yMin = Number.MAX_VALUE;
-    var groupsAreaTemp = {},
-      groupsArea = {};
+    const groups = [];
+    let xMax = -Number.MAX_VALUE;
+    let yMax = -Number.MAX_VALUE;
+    let xMin = Number.MAX_VALUE;
+    let yMin = Number.MAX_VALUE;
+    let groupsAreaTemp = {};
+    const groupsArea = {};
 
     const xAccessor = (d) => d[0];
     const yAccessor = (d) => d[1];
 
-    for (var item in data) {
+    for (const item in data) {
       groups.push(item);
       groupsAreaTemp = {};
       groupsArea[item] = [];
-      //le.log(data[item]);
+      
       for (const [key, points] of Object.entries(data[item])) {
         // eslint-disable-next-line no-loop-func
         points.forEach((point) => {
@@ -418,8 +167,9 @@ export class ChartRender {
           );
         });
       }
+      
       for (const [key, areaRange] of Object.entries(groupsAreaTemp)) {
-        var areaPoint = {};
+        const areaPoint = {};
         areaPoint.x = key;
         areaPoint.yMin = areaRange.yMin;
         areaPoint.yMax = areaRange.yMax;
@@ -428,51 +178,52 @@ export class ChartRender {
     }
 
     // Setting dimensions and margin for the plot
-    d3.select("#" + chartId)
+    d3.select(`#${chartId}`)
       .selectAll("g")
       .remove();
     const svg = d3
-      .select("#" + chartId)
+      .select(`#${chartId}`)
       .attr("width", plotWidth + margin.left + margin.right)
       .attr("height", plotHeight + margin.top + margin.bottom)
       .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Add X axis
     const x = d3.scaleLinear().domain([xMin, xMax]).range([0, plotWidth]);
-    svg.selectAll(chartId + "-lineXAxis").remove();
+    svg.selectAll(`${chartId}-lineXAxis`).remove();
     svg
       .append("g")
-      .attr("class", chartId + "-lineXAxis")
-      .attr("transform", "translate(0," + plotHeight + ")")
+      .attr("class", `${chartId}-lineXAxis`)
+      .attr("transform", `translate(0,${plotHeight})`)
       .call(d3.axisBottom(x))
       .attr("opacity", "1");
 
     // Add Y axis
     let y = null;
-    if (chartSettings.temporalSettings.logScale)
+    if (chartSettings.temporalSettings.logScale) {
       y = d3.scaleSymlog([yMin, yMax], [plotHeight, 0]);
-    else {
+    } else {
       y = d3.scaleLinear().domain([yMin, yMax]).range([plotHeight, 0]);
     }
-    svg.selectAll(chartId + "-lineYAxis").remove();
+    
+    svg.selectAll(`${chartId}-lineYAxis`).remove();
     svg
       .append("g")
-      .attr("class", chartId + "-lineYAxis")
+      .attr("class", `${chartId}-lineYAxis`)
       .call(d3.axisLeft(y))
       .attr("opacity", "1");
 
-    // Color scale: give me a specie name, I return a color
-    var color = d3
+    // Color scale
+    const color = d3
       .scaleOrdinal()
       .domain(groups)
       .range(["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"]);
 
-    // Remove old dots
+    // Remove old elements
     svg.selectAll("path").remove().exit();
-
     d3.selectAll(".timechartTooltip").remove().exit();
-    var tooltip = d3
+    
+    const tooltip = d3
       .select("body")
       .append("div")
       .attr("class", "timechartTooltip")
@@ -495,6 +246,7 @@ export class ChartRender {
       .attr("stroke-width", 2)
       .style("opacity", 0)
       .style("pointer-events", "none");
+      
     if (chartSettings.temporalSettings.drawAreas) {
       // Drawing areas
       groups.forEach((ensemble) => {
@@ -520,7 +272,8 @@ export class ChartRender {
           );
       });
     }
-    // Add the line
+    
+    // Add the lines
     groups.forEach((ensemble) => {
       for (const [simulation, points] of Object.entries(data[ensemble])) {
         svg
@@ -549,7 +302,6 @@ export class ChartRender {
               year,
             );
             const hoveredIndexData = data[ensemble][simulation][bisectionIndex];
-            //const hoveredIndexData = data[ensemble][simulation][Math.max(0,bisectionIndex - 1)]
 
             // Update Image
             tooltipDot
@@ -558,28 +310,26 @@ export class ChartRender {
               .attr("cy", y(yAccessor(hoveredIndexData)));
 
             tooltip
-              .style("top", event.pageY - 10 + "px")
-              .style("left", event.pageX + 10 + "px")
+              .style("top", `${event.pageY - 10}px`)
+              .style("left", `${event.pageX + 10}px`)
               .style("visibility", "visible");
             tooltip.text(
-              simulation +
-                ":\n" +
-                "Ano: " +
-                hoveredIndexData[0] +
-                "\nValor: " +
-                hoveredIndexData[1],
+              `${simulation}:
+Ano: ${hoveredIndexData[0]}
+Valor: ${hoveredIndexData[1]}`
             );
           })
-          .on("mouseleave", function (event) {
+          .on("mouseleave", function () {
             tooltipDot.style("opacity", 0);
             tooltip.style("visibility", "hidden");
           });
       }
     });
 
-    var legendContainer = svg
+    // Add legend
+    const legendContainer = svg
       .append("g")
-      .attr("transform", "translate(" + plotWidth + "," + 0 + ")");
+      .attr("transform", `translate(${plotWidth},0)`);
 
     legendContainer
       .selectAll("legenddots")
@@ -618,10 +368,10 @@ export class ChartRender {
    * Function to draw a scatter plot from DR data
    *
    * @param {string} chartId
-   * @param {*} data
+   * @param {object} chartSettings
    */
   static #drawScatterPlot(chartId, chartSettings) {
-    let data = chartSettings.chartData;
+    const data = chartSettings.chartData;
     // Get dimensions for the plot
     if (document.getElementById(chartId) === null) return;
     const container = document.getElementById(chartId).parentNode;
@@ -630,23 +380,25 @@ export class ChartRender {
     const plotWidth = container.offsetWidth - margin.left - margin.right;
     const plotHeight = container.offsetHeight - margin.top - margin.bottom;
     const pointRadius = 4;
-    var groups = [];
+    const groups = [];
 
     // FIXME: For some reason, the backend is returning each simulation as a string instead of a object.
     // Here we are going to convert this string into a JSON object
-    var convertedData = {};
-    for (var ensemble in data) {
+    const convertedData = {};
+    for (const ensemble in data) {
       convertedData[ensemble] = [];
       // eslint-disable-next-line no-loop-func
       data[ensemble].forEach((simulation) => {
         convertedData[ensemble].push(JSON.parse(simulation));
       });
     }
-    var xMax = -Number.MIN_VALUE,
-      yMax = -Number.MIN_VALUE;
-    var xMin = Number.MAX_VALUE,
-      yMin = Number.MAX_VALUE;
-    for (var item in convertedData) {
+    
+    let xMax = -Number.MIN_VALUE;
+    let yMax = -Number.MIN_VALUE;
+    let xMin = Number.MAX_VALUE;
+    let yMin = Number.MAX_VALUE;
+    
+    for (const item in convertedData) {
       groups.push(item);
       // eslint-disable-next-line no-loop-func
       convertedData[item].forEach((simulation) => {
@@ -658,47 +410,46 @@ export class ChartRender {
     }
 
     // Setting dimensions and margin for the plot
-    d3.select("#" + chartId)
+    d3.select(`#${chartId}`)
       .selectAll("g")
       .remove();
     const svg = d3
-      .select("#" + chartId)
+      .select(`#${chartId}`)
       .attr("width", plotWidth + margin.left + margin.right)
       .attr("height", plotHeight + margin.top + margin.bottom)
       .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // Add X axis
     const x = d3.scaleLinear().domain([xMin, xMax]).range([0, plotWidth]);
-    svg.selectAll(chartId + "-scatterXAxis").remove();
+    svg.selectAll(`${chartId}-scatterXAxis`).remove();
     svg
       .append("g")
-      .attr("class", chartId + "-scatterXAxis")
-      .attr("transform", "translate(0," + plotHeight + ")")
+      .attr("class", `${chartId}-scatterXAxis`)
+      .attr("transform", `translate(0,${plotHeight})`)
       .call(d3.axisBottom(x))
       .attr("opacity", "0");
 
     // Add Y axis
     const y = d3.scaleLinear().domain([yMin, yMax]).range([plotHeight, 0]);
-    svg.selectAll(chartId + "-scatterYAxis").remove();
+    svg.selectAll(`${chartId}-scatterYAxis`).remove();
     svg
       .append("g")
-      .attr("class", chartId + "-scatterYAxis")
+      .attr("class", `${chartId}-scatterYAxis`)
       .call(d3.axisLeft(y))
       .attr("opacity", "0");
 
-    // Color scale: give me a specie name, I return a color
-    var color = d3
+    // Color scale
+    const color = d3
       .scaleOrdinal()
       .domain(groups)
       .range(["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"]);
 
     // Remove old dots
     svg.selectAll("dot").remove().exit();
-
     d3.selectAll(".scatterTooltip").remove().exit();
 
-    var tooltip = d3
+    const tooltip = d3
       .select("body")
       .append("div")
       .attr("class", "scatterTooltip")
@@ -714,6 +465,7 @@ export class ChartRender {
       .text("a simple tooltip");
 
     let points = {};
+    
     if (chartSettings.drSettings.showConvexHull) {
       // Checking if all ensembles have at least 3 simulations
       let canConvexHull = true;
@@ -724,8 +476,8 @@ export class ChartRender {
         // Drawing the convex hull for each ensemble
         groups.forEach((element) => {
           // Creating the convex hull for each group
-          var pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
-          var hull = d3.polygonHull(pxPoint);
+          const pxPoint = convertedData[element].map((d) => [x(d.x), y(d.y)]);
+          const hull = d3.polygonHull(pxPoint);
           svg
             .append("g")
             .append("path")
@@ -736,13 +488,12 @@ export class ChartRender {
         });
       }
     }
+    
     svg.call(
       d3.brush().on("start brush end", ({ selection }) => {
-        let value = [];
         if (selection) {
           const [[x0, y0], [x1, y1]] = selection;
-          value = d3
-            .selectAll(".points")
+          d3.selectAll(".points")
             .style("fill", "gray")
             .filter(
               (d) => x0 <= x(d.x) && x(d.x) < x1 && y0 <= y(d.y) && y(d.y) < y1,
@@ -751,8 +502,7 @@ export class ChartRender {
               return color(
                 utils.getKeyByValueAttribute(convertedData, "name", d.name),
               );
-            })
-            .data();
+            });
         } else {
           d3.selectAll("dot").style("fill", (d) =>
             color(utils.getKeyByValueAttribute(convertedData, "name", d.name)),
@@ -760,6 +510,7 @@ export class ChartRender {
         }
       }),
     );
+    
     // Add dots
     groups.forEach((element) => {
       // Adding points
@@ -791,8 +542,8 @@ export class ChartRender {
         })
         .on("mousemove", function (event) {
           return tooltip
-            .style("top", event.pageY - 10 + "px")
-            .style("left", event.pageX + 10 + "px");
+            .style("top", `${event.pageY - 10}px`)
+            .style("left", `${event.pageX + 10}px`);
         })
         .on("mouseout", function () {
           d3.select(this).transition().duration(100).attr("r", pointRadius);
@@ -800,9 +551,10 @@ export class ChartRender {
         });
     });
 
-    var legendContainer = svg
+    // Add legend
+    const legendContainer = svg
       .append("g")
-      .attr("transform", "translate(" + plotWidth + "," + 0 + ")");
+      .attr("transform", `translate(${plotWidth},0)`);
 
     legendContainer
       .selectAll("legenddots")
@@ -837,3 +589,208 @@ export class ChartRender {
       .style("alignment-baseline", "middle");
   }
 }
+
+/**
+ * Chart settings class that stores chart configuration
+ */
+export class ChartSettings {
+  #chartType = ChartType.DR;
+  #chartTitle = "Title";
+  #chartId = "";
+  #chartData = null;
+
+  #drSettings = {
+    drMethod: chartOptions.drMethodList[0],
+    showConvexHull: true,
+  };
+
+  #temporalSettings = {
+    temporalVariable: chartOptions.ensembleVariableList[0],
+    logScale: false,
+    drawAreas: true,
+  };
+
+  #ensembleList = [];
+  #simulationList = [];
+
+  #parentChartSettings = null;
+  #childrenChartSettings = [];
+
+  constructor(
+    chartType = ChartType.DR,
+    chartTitle = "Title",
+    chartId = "",
+    chartData = null,
+    parentChartSettings = null,
+  ) {
+    this.#chartType = chartType;
+    this.#chartTitle = chartTitle;
+    this.#chartId = chartId;
+    this.#chartData = chartData;
+    this.#parentChartSettings = parentChartSettings;
+  }
+
+  get drSettings() {
+    return this.#drSettings;
+  }
+  
+  get temporalSettings() {
+    return this.#temporalSettings;
+  }
+  
+  get chartType() {
+    return this.#chartType;
+  }
+  
+  get chartTitle() {
+    return this.#chartTitle;
+  }
+  
+  get chartId() {
+    return this.#chartId;
+  }
+  
+  get chartData() {
+    return this.#chartData;
+  }
+  
+  get ensembleList() {
+    return this.#ensembleList;
+  }
+  
+  get simulationList() {
+    return this.#simulationList;
+  }
+  
+  get parentChartSettings() {
+    return this.#parentChartSettings;
+  }
+  
+  get childrenChartSettings() {
+    return this.#childrenChartSettings;
+  }
+
+  set chartTitle(chartTitle) {
+    this.#chartTitle = chartTitle;
+  }
+  
+  set chartId(chartId) {
+    this.#chartId = chartId;
+  }
+  
+  set drSettings(drSettings) {
+    this.#drSettings = drSettings;
+  }
+  
+  set temporalSettings(temporalSettings) {
+    this.#temporalSettings = temporalSettings;
+  }
+  
+  set chartType(chartType) {
+    this.#chartType = chartType;
+  }
+  
+  set chartData(chartData) {
+    this.#chartData = chartData;
+  }
+  
+  set ensembleList(ensembleList) {
+    this.#ensembleList = ensembleList;
+  }
+  
+  set simulationList(simulationList) {
+    this.#simulationList = simulationList;
+  }
+  
+  set parentChartSettings(parentChartSettings) {
+    this.#parentChartSettings = parentChartSettings;
+  }
+  
+  set childrenChartSettings(childrenChartSettings) {
+    this.#childrenChartSettings = childrenChartSettings;
+  }
+
+  static getSettings() {
+    switch (this.chartType) {
+      case ChartType.DR:
+        return this.drSettings;
+      case ChartType.TEMPORAL:
+        return this.temporalSettings;
+      default:
+        throw new Error("Chart type does not exist");
+    }
+  }
+
+  static getChartSettingsList() {
+    if (this.childrenChartSettings.length === 0) {
+      return [this];
+    } else {
+      let childrenList = [];
+      for (const childChartSettings in this.childrenChartSettings) {
+        let childList = childChartSettings.getChartSettingsList();
+        childrenList.concat(childList);
+      }
+      let chartSettingsList = [this];
+      return chartSettingsList.concat(childrenList);
+    }
+  }
+
+  clone = function () {
+    let clonedInstance = new ChartSettings(
+      this.chartType,
+      this.chartTitle,
+      this.chartId,
+    );
+    clonedInstance.drSettings = JSON.parse(JSON.stringify(this.drSettings));
+    clonedInstance.temporalSettings = JSON.parse(
+      JSON.stringify(this.temporalSettings),
+    );
+    if (this.chartData) {
+      clonedInstance.chartData = JSON.parse(JSON.stringify(this.chartData));
+    }
+    return clonedInstance;
+  };
+
+  getRestUrl = function () {
+    let restUrl = "/";
+    switch (this.chartType) {
+      case ChartType.DR:
+        restUrl = `${restUrl}dimensional-reduction`;
+        restUrl = `${restUrl}?method=${this.drSettings.drMethod}`;
+        for (const ensemble of this.ensembleList) {
+          restUrl = `${restUrl}&ensemble=${ensemble}`;
+        }
+        for (const simulation of this.simulationList) {
+          restUrl = `${restUrl}&simulation=${simulation}`;
+        }
+        return restUrl;
+      case ChartType.TEMPORAL:
+        restUrl = `${restUrl}temporal-evolution`;
+        restUrl = `${restUrl}?variable=${this.temporalSettings.temporalVariable}`;
+        for (const ensemble of this.ensembleList) {
+          restUrl = `${restUrl}&ensemble=${ensemble}`;
+        }
+        for (const simulation of this.simulationList) {
+          restUrl = `${restUrl}&simulation=${simulation}`;
+        }
+        return restUrl;
+      case ChartType.CORRELATIONMATRIX:
+        restUrl = `${restUrl}correlation-matrix`;
+        for (const ensemble of this.ensembleList) {
+          restUrl = `${restUrl}&ensemble=${ensemble}`;
+        }
+        for (const simulation of this.simulationList) {
+          restUrl = `${restUrl}&simulation=${simulation}`;
+        }
+        return restUrl;
+      default:
+        throw new Error("Chart type does not exist");
+    }
+  };
+}
+
+// Add utility to d3.selection prototype
+d3.selection.prototype.moveToFront = function () {
+  d3.select(this).raise();
+  return this;
+};
