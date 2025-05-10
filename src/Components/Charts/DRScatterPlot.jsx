@@ -138,6 +138,7 @@ function DRScatterPlot({
 
   const [brushing, setBrushing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
+  console.log(chartSettings);
   const [selectedPoints, setSelectedPoints] = React.useState(chartSettings.interactiveFilters.simulationList);
   const [brushBox, setBrushBox] = React.useState(chartSettings.interactiveFilters.brushBox);
 

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as ChartUtils from "../utils/ChartUtils";
+import { ChartSettings } from "utils/ChartSettings";
+import { ChartType } from "utils/ChartType";
+import { ChartOptions } from "utils/ChartOptions";
 
 export default function ChartSettingsPanel({
     currentChartSettings,

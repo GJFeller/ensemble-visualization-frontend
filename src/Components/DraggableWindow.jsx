@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState, memo } from "react";
-import {
-  ChartType,
-  ChartRender,
-  ChartSettings,
-  chartOptions,
-} from "../utils/ChartUtils";
-
+import { ChartSettings } from "utils/ChartSettings";
+import { ChartType } from "utils/ChartType";
+import { ChartOptions } from "utils/ChartOptions";
 import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
 import closeIcon from "../Images/close.png";
 import optionsIcon from "../Images/options.png";

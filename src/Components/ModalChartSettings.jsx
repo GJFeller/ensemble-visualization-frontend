@@ -1,12 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import closeIcon from "../Images/close.png";
 import ChartSettingsPanel from "./ChartSettingsPanel";
-import {
-  ChartType,
-  ChartRender,
-  ChartSettings,
-  chartOptions,
-} from "../utils/ChartUtils";
+import { ChartSettings } from "utils/ChartSettings";
+import { ChartType } from "utils/ChartType";
+import { ChartOptions } from "utils/ChartOptions";
 import { clone } from "../utils/utils";
 import CorrelationMatrix from "./Charts/CorrelationMatrix";
 import DRScatterPlot from "./Charts/DRScatterPlot";

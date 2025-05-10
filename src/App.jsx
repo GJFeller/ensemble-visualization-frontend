@@ -2,7 +2,9 @@ import EnsembleSideBar from "./Layout/EnsembleSideBar/EnsembleSideBar";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import VisualizationMain from "./Layout/VisualizationMain/VisualizationMain";
 import { useState } from "react";
-import * as ChartUtils from "./utils/ChartUtils";
+import { ChartSettings } from "utils/ChartSettings";
+import { ChartType } from "utils/ChartType";
+import { ChartOptions } from "utils/ChartOptions";
 
 import "./App.css";
 
@@ -32,7 +34,7 @@ function App() {
     }
     const newChartTreeRootList = [];
     for (const newChart of chartType) {
-      let chartSettings = new ChartUtils.ChartSettings(
+      let chartSettings = new ChartSettings(
         newChart,
         "Header Title",
         "plot-" + plotId++,
