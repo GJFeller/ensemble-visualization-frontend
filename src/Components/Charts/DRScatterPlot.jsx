@@ -25,6 +25,31 @@ const tooltipStyles = {
   pointerEvents: 'none',
 };
 
+// Função para garantir que temos um array válido
+const ensureArray = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  
+  // Tentar converter de string JSON para objeto
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  // Se for objeto, tentar converter para array
+  if (value && typeof value === 'object') {
+    return Object.values(value);
+  }
+  
+  // Caso contrário, retornar array vazio
+  return [];
+};
+
 // Memoized legend component
 const Legend = memo(({ groups, colorScale, margin, xSize }) => (
   <Group top={LEGEND_MARGIN.top} left={margin.left + xSize + LEGEND_MARGIN.left}>
@@ -49,10 +74,33 @@ const Legend = memo(({ groups, colorScale, margin, xSize }) => (
 const Hulls = memo(({ groups, chartData, colorScale, xScale, yScale }) => (
   <g className="hull-layer" style={{ pointerEvents: 'none' }}>
     {groups.map((element) => {
-      const pxPoints = chartData[element]?.map((d) => [
+      // Usar a função ensureArray para garantir que temos um array
+      const dataArray = ensureArray(chartData[element]);
+      
+      // Verificar se temos pontos suficientes para formar um hull (mínimo de 3)
+      if (dataArray.length < 3) {
+        return null;
+      }
+      
+      // Filtrar pontos para garantir que todos têm coordenadas válidas
+      const validPoints = dataArray.filter(d => 
+        d && 
+        d.x !== undefined && 
+        d.y !== undefined && 
+        !isNaN(d.x) && 
+        !isNaN(d.y)
+      );
+      
+      if (validPoints.length < 3) {
+        return null;
+      }
+
+      const pxPoints = validPoints.map((d) => [
         xScale(d.x),
         yScale(d.y),
-      ]) || [];
+      ]);
+      
+      // O d3.polygonHull retorna null se não conseguir formar um hull
       const hull = d3.polygonHull(pxPoints);
       return hull && (
         <Polygon
@@ -101,30 +149,58 @@ function DRScatterPlot({
     const ySize = Math.max(0, height - margin.bottom - margin.top);
     
     const groups = Object.keys(chartSettings.chartData);
-    const bounds = groups.reduce((acc, item) => {
-      if (Array.isArray(chartSettings.chartData[item])) {
-        chartSettings.chartData[item].forEach((simulation) => {
-          acc.xMax = Math.max(acc.xMax, simulation.x);
-          acc.xMin = Math.min(acc.xMin, simulation.x);
-          acc.yMax = Math.max(acc.yMax, simulation.y);
-          acc.yMin = Math.min(acc.yMin, simulation.y);
+    
+    // Valores padrão para os limites
+    let xMin = 0, xMax = 1, yMin = 0, yMax = 1;
+    let pointsFound = false;
+    
+    if (groups.length > 0) {
+      const bounds = groups.reduce((acc, item) => {
+        // Usar a função ensureArray para garantir que temos um array
+        const dataArray = ensureArray(chartSettings.chartData[item]);
+        
+        dataArray.forEach((point) => {
+          if (point && typeof point.x === 'number' && typeof point.y === 'number') {
+            acc.xMax = Math.max(acc.xMax, point.x);
+            acc.xMin = Math.min(acc.xMin, point.x);
+            acc.yMax = Math.max(acc.yMax, point.y);
+            acc.yMin = Math.min(acc.yMin, point.y);
+            pointsFound = true;
+          }
         });
+        return acc;
+      }, {
+        xMax: -Number.MAX_VALUE,
+        yMax: -Number.MAX_VALUE,
+        xMin: Number.MAX_VALUE,
+        yMin: Number.MAX_VALUE
+      });
+      
+      // Usar os limites calculados apenas se pontos foram encontrados
+      if (pointsFound) {
+        xMin = bounds.xMin;
+        xMax = bounds.xMax;
+        yMin = bounds.yMin;
+        yMax = bounds.yMax;
       }
-      return acc;
-    }, {
-      xMax: -Number.MIN_VALUE,
-      yMax: -Number.MIN_VALUE,
-      xMin: Number.MAX_VALUE,
-      yMin: Number.MAX_VALUE
-    });
+    }
+    
+    // Adicionar margem aos limites
+    const xPadding = (xMax - xMin) * 0.05 || 0.1;  // Fallback para evitar NaN
+    const yPadding = (yMax - yMin) * 0.05 || 0.1;
+    
+    xMin -= xPadding;
+    xMax += xPadding;
+    yMin -= yPadding;
+    yMax += yPadding;
 
     const scales = {
       xScale: scaleLinear({
-        domain: [bounds.xMin, bounds.xMax],
+        domain: [xMin, xMax],
         range: [0, xSize],
       }),
       yScale: scaleLinear({
-        domain: [bounds.yMin, bounds.yMax],
+        domain: [yMin, yMax],
         range: [ySize, 0],
       }),
       colorScale: scaleOrdinal({
@@ -133,14 +209,29 @@ function DRScatterPlot({
       })
     };
 
-    return { xSize, ySize, groups, scales, bounds };
+    return { 
+      xSize, 
+      ySize, 
+      groups, 
+      scales, 
+      bounds: { xMin, xMax, yMin, yMax } 
+    };
   }, [width, height, margin, chartSettings?.chartData]);
 
   const [brushing, setBrushing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
   console.log(chartSettings);
-  const [selectedPoints, setSelectedPoints] = React.useState(chartSettings.interactiveFilters.simulationList);
-  const [brushBox, setBrushBox] = React.useState(chartSettings.interactiveFilters.brushBox);
+  
+  // Inicialização segura de selectedPoints
+  const [selectedPoints, setSelectedPoints] = React.useState(
+    chartSettings?.interactiveFilters?.simulationList instanceof Set ? 
+      chartSettings.interactiveFilters.simulationList : 
+      new Set()
+  );
+  
+  const [brushBox, setBrushBox] = React.useState(
+    chartSettings?.interactiveFilters?.brushBox || null
+  );
 
   const handleMouseMove = useCallback((event, point, group) => {
     if (isDragging || (brushBox && !isPointInBrush(point, brushBox))) {
@@ -180,23 +271,38 @@ function DRScatterPlot({
 
     const selected = new Set();
     Object.entries(chartSettings.chartData).forEach(([ensemble, points]) => {
-      if (Array.isArray(points)) {
-        points.forEach(point => {
-          if (isPointInBrush(point, bbox)) {
-            selected.add(point.name);
-          }
-        });
-      }
+      // Usar a função ensureArray para garantir que temos um array
+      const dataArray = ensureArray(points);
+      
+      dataArray.forEach(point => {
+        if (point && isPointInBrush(point, bbox)) {
+          selected.add(point.name);
+        }
+      });
     });
 
-    chartSettings.interactiveFilters.simulationList = selected;
-    chartSettings.interactiveFilters.brushBox = bbox;
+    // Verificar se interactiveFilters existe antes de atribuir
+    if (chartSettings?.interactiveFilters) {
+      chartSettings.interactiveFilters.simulationList = selected;
+      chartSettings.interactiveFilters.brushBox = bbox;
+    }
 
     setSelectedPoints(selected);
     setBrushBox(bbox);
   }, [chartSettings?.chartData, isPointInBrush]);
 
-  return !chartSettings?.chartData || width < 10 ? null : (
+  // Se não houver dados ou o componente for muito pequeno, não renderizar
+  if (!chartSettings?.chartData || 
+      !scales || 
+      width < 10) {
+    return (
+      <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p>Não há dados para exibir</p>
+      </div>
+    );
+  }
+
+  return (
     <>
       <div style={{ position: 'relative', width, height, overflow: 'hidden' }}>
         <svg width={width} height={height}>
@@ -237,17 +343,31 @@ function DRScatterPlot({
               }}
             />
 
-            <Hulls
-              groups={groups}
-              chartData={chartSettings.chartData}
-              colorScale={scales.colorScale}
-              xScale={scales.xScale}
-              yScale={scales.yScale}
-            />
+            {chartSettings?.drSettings?.showConvexHull && (
+              <Hulls
+                groups={groups}
+                chartData={chartSettings.chartData}
+                colorScale={scales.colorScale}
+                xScale={scales.xScale}
+                yScale={scales.yScale}
+              />
+            )}
             
-            <g className="points-layer" style={{ pointerEvents: 'none' }}>
-              {groups.map((element) =>
-                (chartSettings.chartData[element] || []).map((point, i) => {
+            <g className="points-layer">
+              {groups.map((element) => {
+                // Usar a função ensureArray para garantir que temos um array
+                const dataArray = ensureArray(chartSettings.chartData[element]);
+                
+                return dataArray.map((point, i) => {
+                  // Ignorar pontos inválidos
+                  if (!point || 
+                      point.x === undefined || 
+                      point.y === undefined || 
+                      isNaN(point.x) || 
+                      isNaN(point.y)) {
+                    return null;
+                  }
+                  
                   const isSelected = !brushBox || isPointInBrush(point, brushBox);
                   return (
                     <Circle
@@ -266,8 +386,8 @@ function DRScatterPlot({
                       }}
                     />
                   );
-                })
-              )}
+                });
+              })}
             </g>
           </Group>
           

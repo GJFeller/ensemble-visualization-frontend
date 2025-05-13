@@ -16,7 +16,7 @@ export class ChartSettings {
   };
 
   #temporalSettings = {
-    temporalVariable: ChartOptions.ensembleVariableList[0],
+    temporalVariable: ChartOptions.ensembleVariableList[0] || '',
     logScale: false,
     drawAreas: true,
   };
@@ -235,41 +235,137 @@ export class ChartSettings {
   };
 
   getRestUrl = function () {
-    let restUrl = "/";
+    // Log para depuração
+    console.log("Gerando URL para tipo de gráfico:", this.chartType, 
+                "ensembles:", this.ensembleList, 
+                "simulações:", this.simulationList);
+    
+    // Verificações básicas
+    if (!this.chartType) {
+      console.error("Tipo de gráfico não definido");
+      // Mesmo sem tipo definido, vamos tentar dimensional-reduction como padrão
+      return "/dimensional-reduction";
+    }
+    
+    // Construção da URL baseada no tipo de gráfico
+    let url = "";
+    
     switch (this.chartType) {
       case ChartType.DR:
-        restUrl = `${restUrl}dimensional-reduction`;
-        restUrl = `${restUrl}?method=${this.drSettings.drMethod}`;
-        for (const ensemble of this.ensembleList) {
-          restUrl = `${restUrl}&ensemble=${ensemble}`;
+        // EXATA rota do backend para Dimensional Reduction
+        url = "/dimensional-reduction";
+        
+        // Adicionar parâmetros de consulta
+        const drParams = new URLSearchParams();
+        
+        // Adicionar método DR (parâmetro 'method')
+        if (this.drSettings?.drMethod) {
+          drParams.append("method", this.drSettings.drMethod);
+        } else {
+          // Método padrão
+          drParams.append("method", "PCA");
         }
-        for (const simulation of this.simulationList) {
-          restUrl = `${restUrl}&simulation=${simulation}`;
+        
+        // Verificar se há ensembles selecionados
+        if (Array.isArray(this.ensembleList) && this.ensembleList.length > 0) {
+          this.ensembleList.forEach(ensemble => {
+            drParams.append("ensemble", ensemble);
+          });
         }
-        return restUrl;
+        
+        // Verificar se há simulações selecionadas
+        if (Array.isArray(this.simulationList) && this.simulationList.length > 0) {
+          this.simulationList.forEach(simulation => {
+            drParams.append("simulation", simulation);
+          });
+        }
+        
+        // Finalizar URL com parâmetros
+        const drQueryString = drParams.toString();
+        if (drQueryString) {
+          url += `?${drQueryString}`;
+        }
+        
+        break;
+        
       case ChartType.TEMPORAL:
-        restUrl = `${restUrl}temporal-evolution`;
-        restUrl = `${restUrl}?variable=${this.temporalSettings.temporalVariable}`;
-        for (const ensemble of this.ensembleList) {
-          restUrl = `${restUrl}&ensemble=${ensemble}`;
+        // EXATA rota do backend para Temporal Evolution
+        url = "/temporal-evolution";
+        
+        // Adicionar parâmetros de consulta
+        const temporalParams = new URLSearchParams();
+        
+        // Adicionar variável temporal (parâmetro 'variable')
+        if (this.temporalSettings?.temporalVariable) {
+          temporalParams.append("variable", this.temporalSettings.temporalVariable);
         }
-        for (const simulation of this.simulationList) {
-          restUrl = `${restUrl}&simulation=${simulation}`;
+        
+        // Verificar se há ensembles selecionados
+        if (Array.isArray(this.ensembleList) && this.ensembleList.length > 0) {
+          this.ensembleList.forEach(ensemble => {
+            temporalParams.append("ensemble", ensemble);
+          });
         }
-        return restUrl;
+        
+        // Verificar se há simulações selecionadas
+        if (Array.isArray(this.simulationList) && this.simulationList.length > 0) {
+          this.simulationList.forEach(simulation => {
+            temporalParams.append("simulation", simulation);
+          });
+        }
+        
+        // Finalizar URL com parâmetros
+        const temporalQueryString = temporalParams.toString();
+        if (temporalQueryString) {
+          url += `?${temporalQueryString}`;
+        }
+        
+        break;
+        
       case ChartType.CORRELATIONMATRIX:
-        restUrl = `${restUrl}correlation-matrix`;
-        for (const ensemble of this.ensembleList) {
-          restUrl = `${restUrl}&ensemble=${ensemble}`;
+        // EXATA rota do backend para Correlation Matrix
+        url = "/correlation-matrix";
+        
+        // Adicionar parâmetros de consulta
+        const correlationParams = new URLSearchParams();
+        
+        // Verificar se há ensembles selecionados
+        if (Array.isArray(this.ensembleList) && this.ensembleList.length > 0) {
+          this.ensembleList.forEach(ensemble => {
+            correlationParams.append("ensemble", ensemble);
+          });
         }
-        for (const simulation of this.simulationList) {
-          restUrl = `${restUrl}&simulation=${simulation}`;
+        
+        // Verificar se há simulações selecionadas
+        if (Array.isArray(this.simulationList) && this.simulationList.length > 0) {
+          this.simulationList.forEach(simulation => {
+            correlationParams.append("simulation", simulation);
+          });
         }
-        return restUrl;
+        
+        // Finalizar URL com parâmetros
+        const correlationQueryString = correlationParams.toString();
+        if (correlationQueryString) {
+          url += `?${correlationQueryString}`;
+        }
+        
+        break;
+        
       default:
-        throw new Error("Chart type does not exist");
+        // Tipo desconhecido, usar rota dimensional-reduction como fallback
+        console.warn("Tipo de gráfico desconhecido:", this.chartType, "usando dimensional-reduction como fallback");
+        url = "/dimensional-reduction";
+        if (Array.isArray(this.ensembleList) && this.ensembleList.length > 0) {
+          url += "?ensemble=" + this.ensembleList.join("&ensemble=");
+        }
     }
+    
+    // Log da URL final para depuração
+    console.log(`URL final para requisição: ${url}`);
+    
+    return url;
   };
+
 }
 
 export default ChartSettings;

@@ -13,6 +13,9 @@ import { voronoi } from '@visx/voronoi';
 const defaultMargin = { top: 10, left: 10, right: 100, bottom: 30 };
 const legendMargin = { top: 10, left: 10, right: 10, bottom: 10 };
 
+// Função auxiliar para garantir que um valor seja um array
+const ensureArray = (value) => Array.isArray(value) ? value : [];
+
 function TemporalPlot({
   width,
   height,
@@ -48,11 +51,24 @@ function TemporalPlot({
 
   // Process data and create scales
   const { xScale, yScale, groups, areaData, allPoints } = useMemo(() => {
+    // Verificações de segurança
     if (!chartSettings?.chartData) {
       return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
     }
 
+    // Garantir que chartData é um objeto
+    if (typeof chartSettings.chartData !== 'object' || chartSettings.chartData === null) {
+      console.error("chartData não é um objeto válido:", chartSettings.chartData);
+      return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
+    }
+
+    // Obter grupos e verificar se são válidos
     const groups = Object.keys(chartSettings.chartData);
+    if (groups.length === 0) {
+      console.warn("Nenhum grupo encontrado em chartData");
+      return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
+    }
+
     let xMin = Infinity, xMax = -Infinity;
     let yMin = Infinity, yMax = -Infinity;
     const areaData = {};
@@ -62,9 +78,43 @@ function TemporalPlot({
     groups.forEach(group => {
       const timePoints = new Map();
       
+      // Verificar se chartSettings.chartData[group] é um objeto
+      if (!chartSettings.chartData[group] || typeof chartSettings.chartData[group] !== 'object') {
+        console.warn(`Grupo ${group} não contém dados válidos`);
+        return; // Skip this group
+      }
+
       Object.entries(chartSettings.chartData[group]).forEach(([simulation, points]) => {
+        // Verificar se points é um array
+        if (!Array.isArray(points)) {
+          console.warn(`Pontos para ${group}.${simulation} não é um array:`, points);
+          return; // Skip this simulation
+        }
+
+        // Agora é seguro fazer forEach
         points.forEach(point => {
-          const [x, y] = point;
+          // Verificar se point é um array ou objeto com propriedades
+          if (!Array.isArray(point) && typeof point !== 'object') {
+            console.warn(`Ponto inválido em ${group}.${simulation}:`, point);
+            return; // Skip this point
+          }
+
+          // Extrair coordenadas x e y do ponto
+          let x, y;
+          if (Array.isArray(point)) {
+            [x, y] = point;
+          } else {
+            x = point.x !== undefined ? point.x : point.time;
+            y = point.y !== undefined ? point.y : point.value;
+          }
+
+          // Verificar se x e y são números válidos
+          if (typeof x !== 'number' || typeof y !== 'number' || 
+              isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
+            console.warn(`Coordenadas inválidas em ${group}.${simulation}:`, x, y);
+            return; // Skip this point
+          }
+
           xMin = Math.min(xMin, x);
           xMax = Math.max(xMax, x);
           yMin = Math.min(yMin, y);
@@ -89,27 +139,52 @@ function TemporalPlot({
         });
       });
 
-      areaData[group] = Array.from(timePoints.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([x, { min, max }]) => ({
-          x,
-          yMin: min,
-          yMax: max
-        }));
+      // Criar dados de área apenas se houver pontos
+      if (timePoints.size > 0) {
+        areaData[group] = Array.from(timePoints.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([x, { min, max }]) => ({
+            x,
+            yMin: min,
+            yMax: max
+          }));
+      } else {
+        areaData[group] = [];
+      }
     });
 
+    // Verificar se temos pontos após o processamento
+    if (allPoints.length === 0) {
+      console.warn("Nenhum ponto válido encontrado após processamento");
+      return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
+    }
+
+    // Verificar os limites
+    if (!isFinite(xMin) || !isFinite(xMax) || !isFinite(yMin) || !isFinite(yMax)) {
+      console.error("Limites inválidos:", { xMin, xMax, yMin, yMax });
+      // Usar valores padrão para limites
+      xMin = 0;
+      xMax = 1;
+      yMin = 0;
+      yMax = 1;
+    }
+
+    // Adicionar um pouco de espaço para melhor visualização
+    const xPadding = (xMax - xMin) * 0.05;
+    const yPadding = (yMax - yMin) * 0.05;
+
     const xScale = scaleLinear({
-      domain: [xMin, xMax],
+      domain: [xMin - xPadding, xMax + xPadding],
       range: [0, xSize],
     });
 
-    const yScale = chartSettings.temporalSettings.logScale
+    const yScale = chartSettings.temporalSettings?.logScale
       ? scaleSymlog({
-          domain: [yMin, yMax],
+          domain: [yMin - yPadding, yMax + yPadding],
           range: [ySize, 0],
         })
       : scaleLinear({
-          domain: [yMin, yMax],
+          domain: [yMin - yPadding, yMax + yPadding],
           range: [ySize, 0],
         });
 
@@ -118,7 +193,7 @@ function TemporalPlot({
 
   // Create voronoi diagram
   const voronoiLayout = useMemo(() => {
-    if (!allPoints || !xScale || !yScale) return null;
+    if (!allPoints || !xScale || !yScale || allPoints.length === 0) return null;
 
     return voronoi({
       x: d => xScale(d.x),
@@ -133,6 +208,8 @@ function TemporalPlot({
     if (!voronoiLayout) return;
 
     const coords = localPoint(event);
+    if (!coords) return;
+    
     const x = coords.x - margin.left;
     const y = coords.y - margin.top;
     const closest = voronoiLayout.find(x, y, 100);
@@ -166,7 +243,14 @@ function TemporalPlot({
     }, 300);
   };
 
-  if (!chartSettings?.chartData || width < 10) return null;
+  // Renderizar mensagem se não houver dados
+  if (!chartSettings?.chartData || width < 10 || !xScale || !yScale || groups.length === 0) {
+    return (
+      <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div>Não há dados disponíveis para visualização</div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -174,33 +258,65 @@ function TemporalPlot({
         <rect x={0} y={0} width={width} height={height} fill={background} />
         <Group top={margin.top} left={margin.left}>
           {/* Draw areas */}
-          {chartSettings.temporalSettings.drawAreas && groups.map((group, groupIndex) => (
-            <Area
-              key={`area-${group}`}
-              data={areaData[group]}
-              x={d => xScale(d.x)}
-              y0={d => yScale(d.yMin)}
-              y1={d => yScale(d.yMax)}
-              fill={colors[groupIndex % colors.length]}
-              opacity={0.2}
-              curve={curveLinear}
-            />
-          ))}
-
-          {/* Draw lines */}
-          {groups.map((group, groupIndex) => (
-            Object.entries(chartSettings.chartData[group]).map(([simulation, points]) => (
-              <LinePath
-                key={`line-${group}-${simulation}`}
-                data={points.map(p => ({ x: p[0], y: p[1] }))}
+          {chartSettings.temporalSettings?.drawAreas && groups.map((group, groupIndex) => {
+            // Verificar se areaData[group] existe e tem elementos
+            if (!areaData[group] || areaData[group].length === 0) return null;
+            
+            return (
+              <Area
+                key={`area-${group}`}
+                data={areaData[group]}
                 x={d => xScale(d.x)}
-                y={d => yScale(d.y)}
-                stroke={colors[groupIndex % colors.length]}
-                strokeWidth={1}
+                y0={d => yScale(d.yMin)}
+                y1={d => yScale(d.yMax)}
+                fill={colors[groupIndex % colors.length]}
+                opacity={0.2}
                 curve={curveLinear}
               />
-            ))
-          ))}
+            );
+          })}
+
+          {/* Draw lines */}
+          {groups.map((group, groupIndex) => {
+            // Verificar se chartSettings.chartData[group] existe
+            if (!chartSettings.chartData[group]) return null;
+            
+            return Object.entries(chartSettings.chartData[group]).map(([simulation, points]) => {
+              // Verificar se points é um array e tem elementos
+              if (!Array.isArray(points) || points.length === 0) return null;
+              
+              const processedPoints = points.map(p => {
+                if (Array.isArray(p)) {
+                  return { x: p[0], y: p[1] };
+                } else if (typeof p === 'object') {
+                  return { 
+                    x: p.x !== undefined ? p.x : p.time, 
+                    y: p.y !== undefined ? p.y : p.value 
+                  };
+                }
+                return null;
+              }).filter(p => p !== null && 
+                            typeof p.x === 'number' && 
+                            typeof p.y === 'number' &&
+                            isFinite(p.x) && 
+                            isFinite(p.y));
+              
+              // Se não houver pontos processados válidos, não renderizar
+              if (processedPoints.length === 0) return null;
+              
+              return (
+                <LinePath
+                  key={`line-${group}-${simulation}`}
+                  data={processedPoints}
+                  x={d => xScale(d.x)}
+                  y={d => yScale(d.y)}
+                  stroke={colors[groupIndex % colors.length]}
+                  strokeWidth={1}
+                  curve={curveLinear}
+                />
+              );
+            });
+          })}
 
           {/* Mouse detection area */}
           <rect
