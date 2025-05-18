@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback, memo } from "react";
+import React, { useEffect, useMemo, useCallback, memo, useRef } from "react";
 import { Group } from "@visx/group";
 import { scaleLinear, scaleOrdinal } from "@visx/scale";
 import { useTooltip, Tooltip, defaultStyles } from "@visx/tooltip";
@@ -12,6 +12,8 @@ const DEFAULT_MARGIN = { top: 10, left: 10, right: 100, bottom: 10 };
 const LEGEND_MARGIN = { top: 10, left: 10, right: 10, bottom: 10 };
 const POINT_RADIUS = 2;
 const TOOLTIP_HIDE_DELAY = 300;
+
+// Color palette to match the main branch
 const COLOR_PALETTE = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"];
 
 const tooltipStyles = {
@@ -124,6 +126,7 @@ function DRScatterPlot({
   events = false,
   margin = DEFAULT_MARGIN,
 }) {
+  const svgRef = useRef(null);
   const {
     showTooltip,
     hideTooltip,
@@ -220,7 +223,6 @@ function DRScatterPlot({
 
   const [brushing, setBrushing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
-  console.log(chartSettings);
   
   // Inicialização segura de selectedPoints
   const [selectedPoints, setSelectedPoints] = React.useState(
@@ -232,6 +234,14 @@ function DRScatterPlot({
   const [brushBox, setBrushBox] = React.useState(
     chartSettings?.interactiveFilters?.brushBox || null
   );
+
+  // Garantir que o gráfico se ajuste ao tamanho do contêiner
+  useEffect(() => {
+    if (svgRef.current && width > 0 && height > 0) {
+      svgRef.current.setAttribute('width', width);
+      svgRef.current.setAttribute('height', height);
+    }
+  }, [width, height]);
 
   const handleMouseMove = useCallback((event, point, group) => {
     if (isDragging || (brushBox && !isPointInBrush(point, brushBox))) {
@@ -303,114 +313,117 @@ function DRScatterPlot({
   }
 
   return (
-    <>
-      <div style={{ position: 'relative', width, height, overflow: 'hidden' }}>
-        <svg width={width} height={height}>
-          <rect x={0} y={0} width={width} height={height} fill="#ffffff" />
-          <Group top={margin.top} left={margin.left}>
-            <Brush
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+      <svg 
+        ref={svgRef}
+        width={width} 
+        height={height}
+        style={{ display: 'block', width: '100%', height: '100%' }}
+      >
+        <rect x={0} y={0} width={width} height={height} fill="#ffffff" />
+        <Group top={margin.top} left={margin.left}>
+          <Brush
+            xScale={scales.xScale}
+            yScale={scales.yScale}
+            width={xSize}
+            height={ySize}
+            handleSize={8}
+            resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
+            brushDirection="both"
+            initialBrushPosition={{
+              start: { x: 0, y: 0 },
+              end: { x: 0, y: 0 },
+            }}
+            onBrushStart={() => {
+              setBrushing(true);
+              setIsDragging(true);
+              hideTooltip();
+            }}
+            onChange={brush => {
+              if (!brush) {
+                onBrushUpdate(null);
+                return;
+              }
+              setIsDragging(true);
+              onBrushUpdate(brush);
+            }}
+            onBrushEnd={() => {
+              setBrushing(false);
+              setIsDragging(false);
+            }}
+            onClick={() => {
+              setSelectedPoints(new Set());
+              setBrushBox(null);
+            }}
+          />
+
+          {chartSettings?.drSettings?.showConvexHull && (
+            <Hulls
+              groups={groups}
+              chartData={chartSettings.chartData}
+              colorScale={scales.colorScale}
               xScale={scales.xScale}
               yScale={scales.yScale}
-              width={xSize}
-              height={ySize}
-              handleSize={8}
-              resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
-              brushDirection="both"
-              initialBrushPosition={{
-                start: { x: 0, y: 0 },
-                end: { x: 0, y: 0 },
-              }}
-              onBrushStart={() => {
-                setBrushing(true);
-                setIsDragging(true);
-                hideTooltip();
-              }}
-              onChange={brush => {
-                if (!brush) {
-                  onBrushUpdate(null);
-                  return;
-                }
-                setIsDragging(true);
-                onBrushUpdate(brush);
-              }}
-              onBrushEnd={() => {
-                setBrushing(false);
-                setIsDragging(false);
-              }}
-              onClick={() => {
-                setSelectedPoints(new Set());
-                setBrushBox(null);
-              }}
             />
-
-            {chartSettings?.drSettings?.showConvexHull && (
-              <Hulls
-                groups={groups}
-                chartData={chartSettings.chartData}
-                colorScale={scales.colorScale}
-                xScale={scales.xScale}
-                yScale={scales.yScale}
-              />
-            )}
-            
-            <g className="points-layer">
-              {groups.map((element) => {
-                // Usar a função ensureArray para garantir que temos um array
-                const dataArray = ensureArray(chartSettings.chartData[element]);
-                
-                return dataArray.map((point, i) => {
-                  // Ignorar pontos inválidos
-                  if (!point || 
-                      point.x === undefined || 
-                      point.y === undefined || 
-                      isNaN(point.x) || 
-                      isNaN(point.y)) {
-                    return null;
-                  }
-                  
-                  const isSelected = !brushBox || isPointInBrush(point, brushBox);
-                  return (
-                    <Circle
-                      key={`point-${element}-${i}`}
-                      className="dot"
-                      cx={scales.xScale(point.x)}
-                      cy={scales.yScale(point.y)}
-                      r={POINT_RADIUS}
-                      fill={scales.colorScale(element)}
-                      opacity={isSelected ? 1 : 0.3}
-                      onMouseMove={(event) => handleMouseMove(event, point, element)}
-                      onMouseLeave={handleMouseLeave}
-                      style={{ 
-                        cursor: isSelected ? 'pointer' : 'default',
-                        pointerEvents: isSelected ? 'visible' : 'none'
-                      }}
-                    />
-                  );
-                });
-              })}
-            </g>
-          </Group>
+          )}
           
-          <Legend
-            groups={groups}
-            colorScale={scales.colorScale}
-            margin={margin}
-            xSize={xSize}
-          />
-        </svg>
+          <g className="points-layer">
+            {groups.map((element) => {
+              // Usar a função ensureArray para garantir que temos um array
+              const dataArray = ensureArray(chartSettings.chartData[element]);
+              
+              return dataArray.map((point, i) => {
+                // Ignorar pontos inválidos
+                if (!point || 
+                    point.x === undefined || 
+                    point.y === undefined || 
+                    isNaN(point.x) || 
+                    isNaN(point.y)) {
+                  return null;
+                }
+                
+                const isSelected = !brushBox || isPointInBrush(point, brushBox);
+                return (
+                  <Circle
+                    key={`point-${element}-${i}`}
+                    className="dot"
+                    cx={scales.xScale(point.x)}
+                    cy={scales.yScale(point.y)}
+                    r={POINT_RADIUS}
+                    fill={scales.colorScale(element)}
+                    opacity={isSelected ? 1 : 0.3}
+                    onMouseMove={(event) => handleMouseMove(event, point, element)}
+                    onMouseLeave={handleMouseLeave}
+                    style={{ 
+                      cursor: isSelected ? 'pointer' : 'default',
+                      pointerEvents: isSelected ? 'visible' : 'none'
+                    }}
+                  />
+                );
+              });
+            })}
+          </g>
+        </Group>
+        
+        <Legend
+          groups={groups}
+          colorScale={scales.colorScale}
+          margin={margin}
+          xSize={xSize}
+        />
+      </svg>
 
-        {tooltipData && !isDragging && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-            <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
-              <div className="text-xs">
-                <div><strong>Ensemble: {tooltipData.ensemble}</strong></div>
-                {tooltipData.name && <div>Simulation: {tooltipData.name}</div>}
-              </div>
-            </Tooltip>
-          </div>
-        )}
-      </div>
-    </>
+      {tooltipData && !isDragging && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+          <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
+            <div className="text-xs">
+              <div><strong>Ensemble: {tooltipData.ensemble}</strong></div>
+              {tooltipData.name && <div>Simulation: {tooltipData.name}</div>}
+            </div>
+          </Tooltip>
+        </div>
+      )}
+    </div>
   );
 }
 

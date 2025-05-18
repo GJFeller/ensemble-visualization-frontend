@@ -1,4 +1,4 @@
-import React, { useState, memo, useMemo } from 'react';
+import React, { useState, memo, useMemo, useRef, useEffect } from 'react';
 import { Group } from '@visx/group';
 import { scaleLinear, scaleSymlog } from '@visx/scale';
 import { useTooltip, Tooltip, defaultStyles } from '@visx/tooltip';
@@ -13,6 +13,9 @@ import { voronoi } from '@visx/voronoi';
 const defaultMargin = { top: 10, left: 10, right: 100, bottom: 30 };
 const legendMargin = { top: 10, left: 10, right: 10, bottom: 10 };
 
+// Updated color palette to match the main branch
+const COLORS = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"];
+
 // Função auxiliar para garantir que um valor seja um array
 const ensureArray = (value) => Array.isArray(value) ? value : [];
 
@@ -23,6 +26,8 @@ function TemporalPlot({
   events = false,
   margin = defaultMargin,
 }) {
+  const svgRef = useRef(null);
+  
   // Chart sizes
   const xSize = width > margin.left + margin.right
     ? width - margin.left - margin.right
@@ -31,8 +36,7 @@ function TemporalPlot({
     ? height - margin.bottom - margin.top
     : height;
 
-  // Color palette
-  const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"];
+  // Background color
   const background = "#ffffff";
 
   // Tooltip setup
@@ -48,6 +52,17 @@ function TemporalPlot({
 
   // State for hover point
   const [hoverPoint, setHoverPoint] = useState(null);
+  
+  // Garantir que o gráfico se ajuste ao tamanho do contêiner
+  useEffect(() => {
+    if (svgRef.current && width > 0 && height > 0) {
+      svgRef.current.setAttribute('width', width);
+      svgRef.current.setAttribute('height', height);
+      
+      // Log para debug
+      console.log(`TemporalPlot - Dimensões atualizadas: ${width}x${height}`);
+    }
+  }, [width, height]);
 
   // Process data and create scales
   const { xScale, yScale, groups, areaData, allPoints } = useMemo(() => {
@@ -231,7 +246,7 @@ function TemporalPlot({
       setHoverPoint({
         x: xScale(pointX),
         y: yScale(pointY),
-        color: colors[groups.indexOf(group) % colors.length]
+        color: COLORS[groups.indexOf(group) % COLORS.length]
       });
     }
   };
@@ -253,8 +268,13 @@ function TemporalPlot({
   }
 
   return (
-    <>
-      <svg width={width} height={height}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+      <svg 
+        ref={svgRef}
+        width={width} 
+        height={height}
+        style={{ display: 'block', width: '100%', height: '100%' }}
+      >
         <rect x={0} y={0} width={width} height={height} fill={background} />
         <Group top={margin.top} left={margin.left}>
           {/* Draw areas */}
@@ -269,7 +289,7 @@ function TemporalPlot({
                 x={d => xScale(d.x)}
                 y0={d => yScale(d.yMin)}
                 y1={d => yScale(d.yMax)}
-                fill={colors[groupIndex % colors.length]}
+                fill={COLORS[groupIndex % COLORS.length]}
                 opacity={0.2}
                 curve={curveLinear}
               />
@@ -310,7 +330,7 @@ function TemporalPlot({
                   data={processedPoints}
                   x={d => xScale(d.x)}
                   y={d => yScale(d.y)}
-                  stroke={colors[groupIndex % colors.length]}
+                  stroke={COLORS[groupIndex % COLORS.length]}
                   strokeWidth={1}
                   curve={curveLinear}
                 />
@@ -359,7 +379,7 @@ function TemporalPlot({
                 cx={0}
                 cy={i * 25}
                 r={7}
-                fill={colors[i % colors.length]}
+                fill={COLORS[i % COLORS.length]}
               />
               <Text
                 x={12}
@@ -387,7 +407,7 @@ function TemporalPlot({
           </div>
         </Tooltip>
       )}
-    </>
+    </div>
   );
 }
 

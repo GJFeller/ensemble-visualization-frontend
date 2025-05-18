@@ -126,6 +126,71 @@ const processBackendData = (data, chartType) => {
   return data;
 };
 
+// Função para criar dados de exemplo quando não há dados reais
+const createSyntheticData = (chartType) => {
+  console.log("Criando dados sintéticos para debug");
+  
+  // Dados básicos para diferentes tipos de gráfico
+  switch (chartType) {
+    case ChartType.DR:
+      return {
+        'Região Norte': Array(5).fill().map((_, i) => ({
+          name: `Simulação ${i+1}`,
+          x: Math.random() * 10 - 5,
+          y: Math.random() * 10 - 5
+        })),
+        'Região Nordeste': Array(5).fill().map((_, i) => ({
+          name: `Simulação ${i+6}`,
+          x: Math.random() * 10,
+          y: Math.random() * 10
+        })),
+        'Região Sudeste': Array(5).fill().map((_, i) => ({
+          name: `Simulação ${i+11}`,
+          x: Math.random() * 5,
+          y: Math.random() * -10
+        }))
+      };
+      
+    case ChartType.CORRELATIONMATRIX:
+      const variables = ['Var1', 'Var2', 'Var3', 'Var4', 'Var5'];
+      const matrix = {};
+      
+      variables.forEach(v1 => {
+        matrix[v1] = {};
+        variables.forEach(v2 => {
+          if (v1 === v2) {
+            matrix[v1][v2] = 1.0;
+          } else {
+            matrix[v1][v2] = Math.random() * 2 - 1; // -1 a 1
+          }
+        });
+      });
+      
+      return matrix;
+      
+    case ChartType.TEMPORAL:
+      return {
+        'Região Norte': {
+          'Sim1': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100]),
+          'Sim2': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100 + 50])
+        },
+        'Região Nordeste': {
+          'Sim3': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100 + 100]),
+          'Sim4': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100 + 150])
+        }
+      };
+      
+    default:
+      return {
+        'Região Norte': Array(5).fill().map((_, i) => ({
+          name: `Simulação ${i+1}`,
+          x: Math.random() * 10 - 5,
+          y: Math.random() * 10 - 5
+        }))
+      };
+  }
+};
+
 const DraggableWindow = ({ data }) => {
   let chartSettings = data.chartSettings;
   const closeWindow = data.closeWindow;
@@ -155,71 +220,6 @@ const DraggableWindow = ({ data }) => {
 
   const closeWindowPressed = (e) => {
     closeWindow(chartSettings.chartId);
-  };
-
-  // Função para criar dados de exemplo quando não há dados reais
-  const createSyntheticData = () => {
-    console.log("Criando dados sintéticos para debug");
-    
-    // Dados básicos para diferentes tipos de gráfico
-    switch (currentChartSettings.chartType) {
-      case ChartType.DR:
-        return {
-          'Região Norte': Array(5).fill().map((_, i) => ({
-            name: `Simulação ${i+1}`,
-            x: Math.random() * 10 - 5,
-            y: Math.random() * 10 - 5
-          })),
-          'Região Nordeste': Array(5).fill().map((_, i) => ({
-            name: `Simulação ${i+6}`,
-            x: Math.random() * 10,
-            y: Math.random() * 10
-          })),
-          'Região Sudeste': Array(5).fill().map((_, i) => ({
-            name: `Simulação ${i+11}`,
-            x: Math.random() * 5,
-            y: Math.random() * -10
-          }))
-        };
-        
-      case ChartType.CORRELATIONMATRIX:
-        const variables = ['Var1', 'Var2', 'Var3', 'Var4', 'Var5'];
-        const matrix = {};
-        
-        variables.forEach(v1 => {
-          matrix[v1] = {};
-          variables.forEach(v2 => {
-            if (v1 === v2) {
-              matrix[v1][v2] = 1.0;
-            } else {
-              matrix[v1][v2] = Math.random() * 2 - 1; // -1 a 1
-            }
-          });
-        });
-        
-        return matrix;
-        
-      case ChartType.TEMPORAL:
-        return {
-          'Região Norte': {
-            'Sim1': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100]),
-            'Sim2': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100 + 50])
-          },
-          'Região Nordeste': {
-            'Sim3': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100 + 100]),
-            'Sim4': Array(10).fill().map((_, i) => [2015 + i, Math.random() * 100 + 150])
-          }
-        };
-        
-      default:
-        return {
-          'Região Norte': Array(5).fill().map((_, i) => ({
-            name: `Simulação ${i+1}`,
-            x: Math.random() * 10 - 5,
-            y: Math.random() * 10 - 5
-          }))
-        };
-    }
   };
 
   useEffect(() => {
@@ -273,7 +273,7 @@ const DraggableWindow = ({ data }) => {
             console.warn("Nenhum dado válido retornado pela API, usando dados sintéticos");
             
             // Criar dados sintéticos
-            const syntheticData = createSyntheticData();
+            const syntheticData = createSyntheticData(currentChartSettings.chartType);
             setChartData(syntheticData);
             currentChartSettings.chartData = syntheticData;
           } else {
@@ -289,7 +289,7 @@ const DraggableWindow = ({ data }) => {
           
           // Em caso de erro, usar dados sintéticos
           console.log("Usando dados sintéticos devido ao erro");
-          const syntheticData = createSyntheticData();
+          const syntheticData = createSyntheticData(currentChartSettings.chartType);
           setChartData(syntheticData);
           currentChartSettings.chartData = syntheticData;
           
@@ -321,7 +321,7 @@ const DraggableWindow = ({ data }) => {
           console.warn("Nenhum dado processado para exibir, usando dados sintéticos");
           
           // Criar dados sintéticos
-          const syntheticData = createSyntheticData();
+          const syntheticData = createSyntheticData(currentChartSettings.chartType);
           setChartData(syntheticData);
           currentChartSettings.chartData = syntheticData;
         } else {
@@ -337,14 +337,21 @@ const DraggableWindow = ({ data }) => {
         
         // Em caso de erro, usar dados sintéticos
         console.log("Usando dados sintéticos devido ao erro");
-        const syntheticData = createSyntheticData();
+        const syntheticData = createSyntheticData(currentChartSettings.chartType);
         setChartData(syntheticData);
         currentChartSettings.chartData = syntheticData;
         
         setError(err.message);
         setLoading(false);
       });
-  }, [currentChartSettings.getRestUrl()]);
+  }, [currentChartSettings.getRestUrl(), currentChartSettings.chartType]);
+
+  useEffect(() => {
+    if (container.current) {
+      const rect = container.current.getBoundingClientRect();
+      setDimensions([rect.width, rect.height]);
+    }
+  }, []);
 
   // Renderização do título com depuração
   const displayTitle = typeof currentChartSettings.chartTitle === 'string' 
