@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as ChartUtils from '../utils/ChartUtils';
-
+import { ChartSettings } from "utils/ChartSettings";
+import { ChartType } from "utils/ChartType";
+import { ChartOptions } from "utils/ChartOptions";
 
 export default function ChartSettingsPanel({
     currentChartSettings,
@@ -8,11 +9,9 @@ export default function ChartSettingsPanel({
 }) {
     const [chartSettings, setChartSettings] = useState(currentChartSettings);
 
-    useEffect( () => {
+    useEffect(() => {
         setChartSettings(currentChartSettings);
     }, [currentChartSettings]);
-
-    console.log(chartSettings);
 
     const onChangeDRSelect = (e) => {
       const value = e.target.value;
@@ -38,12 +37,14 @@ export default function ChartSettingsPanel({
       setChartSettings(chartSettingsCopy);
       changeChartSettings(chartSettingsCopy);
     };
+    
     const onChangeLogScale = (e) => {
       let chartSettingsCopy = chartSettings.clone();
       chartSettingsCopy.temporalSettings.logScale = !chartSettings.temporalSettings.logScale;
       setChartSettings(chartSettingsCopy);
       changeChartSettings(chartSettingsCopy);
     };
+    
     const onChangeDrawAreas = (e) => {
       let chartSettingsCopy = chartSettings.clone();
       chartSettingsCopy.temporalSettings.drawAreas = !chartSettings.temporalSettings.drawAreas;
@@ -57,10 +58,10 @@ export default function ChartSettingsPanel({
            <div className='space-y-1 px-1'>
            {chartSettings.chartType === ChartUtils.ChartType.DR &&
                <>
-               <div>
-                  <label>Dimensionality reduction technique:</label>
+               <div className="flex flex-col gap-1">
+                  <label className="text-sm">Dimensionality reduction technique:</label>
                   <select 
-                    className='text-sm max-w-full rounded-lg'
+                    className='text-sm w-48 rounded-lg'
                     defaultValue={chartSettings.drSettings.drMethod} 
                     onChange={onChangeDRSelect}
                   >
@@ -80,21 +81,31 @@ export default function ChartSettingsPanel({
                   /> Show convex hull
                </div>
                </>
-               
            }
            {chartSettings.chartType === ChartUtils.ChartType.TEMPORAL &&
                <>
-               <div>
-                  <label>Variable:</label>
-                  <select
-                    className='text-sm max-w-full rounded-lg'
-                    defaultValue={chartSettings.temporalSettings.temporalVariable} 
-                    onChange={onChangeTemporalVariable}
-                  >
-                    {ChartUtils.chartOptions.ensembleVariableList.length > 0 && ChartUtils.chartOptions.ensembleVariableList.map((variable) => {
-                        return (<option key={variable} className='text-sm' value={variable}>{variable}</option>)
-                    })}
-                  </select>
+               <div className="flex flex-col gap-1">
+                  <label className="text-sm">Variable:</label>
+                  <div className="w-48">
+                    <select
+                      className='text-sm w-full rounded-lg truncate'
+                      defaultValue={chartSettings.temporalSettings.temporalVariable} 
+                      onChange={onChangeTemporalVariable}
+                    >
+                      {ChartUtils.chartOptions.ensembleVariableList.length > 0 && ChartUtils.chartOptions.ensembleVariableList.map((variable) => {
+                          return (
+                            <option 
+                              key={variable} 
+                              className='text-sm' 
+                              value={variable}
+                              title={variable}
+                            >
+                              {variable}
+                            </option>
+                          )
+                      })}
+                    </select>
+                  </div>
                </div>
                <div>
                   <input 
@@ -119,7 +130,6 @@ export default function ChartSettingsPanel({
                </>
            }
            </div>
-
         }
         </>
     );

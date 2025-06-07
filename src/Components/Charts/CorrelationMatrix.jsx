@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useRef, useEffect } from 'react';
 import { Group } from '@visx/group';
 import { scaleLinear } from '@visx/scale';
 import { useTooltip, Tooltip } from '@visx/tooltip';
@@ -21,12 +21,17 @@ const TOOLTIP_STYLES = {
 const BACKGROUND_COLOR = 'transparent';
 const TOOLTIP_HIDE_DELAY = 300;
 
+// Mantendo as cores originais da matriz de correlação
+const NEGATIVE_COLOR = 'tomato';
+const NEUTRAL_COLOR = 'white';
+const POSITIVE_COLOR = 'steelblue';
+
 const ColorGradient = memo(() => (
   <defs>
     <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style={{ stopColor: 'tomato' }} />
-      <stop offset="50%" style={{ stopColor: 'white' }} />
-      <stop offset="100%" style={{ stopColor: 'steelblue' }} />
+      <stop offset="0%" style={{ stopColor: NEGATIVE_COLOR }} />
+      <stop offset="50%" style={{ stopColor: NEUTRAL_COLOR }} />
+      <stop offset="100%" style={{ stopColor: POSITIVE_COLOR }} />
     </linearGradient>
   </defs>
 ));
@@ -104,14 +109,40 @@ const CorrelationMatrix = ({
   margin = DEFAULT_MARGIN,
   gap = 1,
 }) => {
+  const svgRef = useRef(null);
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip();
+
+  // Garantir que o gráfico se ajuste ao tamanho do contêiner
+  useEffect(() => {
+    if (svgRef.current && width > 0 && height > 0) {
+      svgRef.current.setAttribute('width', width);
+      svgRef.current.setAttribute('height', height);
+      
+      // Log para debug
+      console.log(`CorrelationMatrix - Dimensões atualizadas: ${width}x${height}`);
+    }
+  }, [width, height]);
 
   // Memoize calculations
   const { xSize, ySize, rectWidth, rectHeight, variables, legendRectWidth, legendRectHeight, legendXOffset } = useMemo(() => {
     const xSize = Math.max(0, width - margin.left - margin.right);
     const ySize = Math.max(0, height - margin.bottom - margin.top);
     
-    const variables = chartSettings.chartData ? Object.keys(chartSettings.chartData) : [];
+    // Garantir que chartSettings.chartData existe e é um objeto
+    if (!chartSettings?.chartData || typeof chartSettings.chartData !== 'object') {
+      return {
+        xSize,
+        ySize,
+        rectWidth: 0,
+        rectHeight: 0,
+        variables: [],
+        legendRectWidth: 0,
+        legendRectHeight: 0,
+        legendXOffset: 0
+      };
+    }
+    
+    const variables = Object.keys(chartSettings.chartData);
     const rectWidth = variables.length ? (xSize - gap * (variables.length - 1)) / variables.length : 0;
     const rectHeight = variables.length ? (ySize - gap * (variables.length - 1)) / variables.length : 0;
     
@@ -120,12 +151,12 @@ const CorrelationMatrix = ({
     const legendXOffset = margin.left + xSize + LEGEND_MARGIN.left;
 
     return { xSize, ySize, rectWidth, rectHeight, variables, legendRectWidth, legendRectHeight, legendXOffset };
-  }, [width, height, margin, gap, chartSettings.chartData]);
+  }, [width, height, margin, gap, chartSettings?.chartData]);
 
   const colorScale = useMemo(() => 
     scaleLinear({
       domain: [-1, 0, 1],
-      range: ['tomato', 'white', 'steelblue']
+      range: [NEGATIVE_COLOR, NEUTRAL_COLOR, POSITIVE_COLOR]
     })
   , []);
 
@@ -140,48 +171,74 @@ const CorrelationMatrix = ({
   };
 
   const handleTooltipHide = () => {
-    hideTooltip();
+    setTimeout(() => {
+      hideTooltip();
+    }, TOOLTIP_HIDE_DELAY);
   };
 
-  if (!chartSettings.chartData || width < 10) return null;
+  // Se não há dados ou o componente é muito pequeno
+  if (!chartSettings?.chartData || 
+      typeof chartSettings.chartData !== 'object' || 
+      Object.keys(chartSettings.chartData).length === 0 || 
+      width < 10) {
+    return (
+      <div style={{ 
+        width, 
+        height, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        backgroundColor: '#ffffff' 
+      }}>
+        <p>Não há dados para exibir</p>
+      </div>
+    );
+  }
 
   return (
     <div 
       style={{ 
         position: 'relative',
-        width: width,
-        height: height,
+        width: '100%',
+        height: '100%',
         overflow: 'hidden'
       }}
     >
       <svg 
-        width="100%" 
-        height="100%" 
+        ref={svgRef}
+        width={width} 
+        height={height}
         style={{ 
           background: 'white',
-          position: 'absolute',
-          top: 0,
-          left: 0
+          display: 'block',
+          width: '100%',
+          height: '100%'
         }}
       >
         <Group top={margin.top} left={margin.left}>
           {variables.map((row, i) =>
-            variables.map((col, j) => (
-              <MatrixCell
-                key={`cell-${i}-${j}`}
-                row={row}
-                col={col}
-                value={chartSettings.chartData[row][col]}
-                x={j * rectWidth + j * gap}
-                y={i * rectHeight + i * gap}
-                width={rectWidth}
-                height={rectHeight}
-                color={colorScale(chartSettings.chartData[row][col])}
-                events={events}
-                onTooltipShow={handleTooltipShow}
-                onTooltipHide={handleTooltipHide}
-              />
-            ))
+            variables.map((col, j) => {
+              // Verificar se o valor existe e é um número
+              const rawValue = chartSettings.chartData[row]?.[col];
+              const value = typeof rawValue === 'number' && !isNaN(rawValue) ? rawValue : 0;
+              
+              return (
+                <MatrixCell
+                  key={`cell-${i}-${j}`}
+                  row={row}
+                  col={col}
+                  value={value}
+                  x={j * rectWidth + j * gap}
+                  y={i * rectHeight + i * gap}
+                  width={rectWidth}
+                  height={rectHeight}
+                  color={colorScale(value)}
+                  events={events}
+                  onTooltipShow={handleTooltipShow}
+                  onTooltipHide={handleTooltipHide}
+                />
+              );
+            })
           )}
         </Group>
         <Legend 
