@@ -36,6 +36,39 @@ const VisualizationMain = ({ vizTreeRootList, closeWindow }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Função para encontrar ChartSettings por node ID
+  const findChartSettingsByNodeId = useCallback((nodeId) => {
+    const chart = vizTreeRootList.find(cs => `node-${cs.chartId}` === nodeId);
+    return chart;
+  }, [vizTreeRootList]);
+
+  // Função estendida de conexão com lógica de brushing/seleção
+  const onConnectExtended = useCallback((params) => {
+    console.log('Connecting nodes:', params);
+    
+    // Adiciona a edge normalmente
+    setEdges((eds) => addEdge(params, eds));
+    
+    // Encontra os ChartSettings dos nós origem e destino
+    const sourceChartSettings = findChartSettingsByNodeId(params.source);
+    const targetChartSettings = findChartSettingsByNodeId(params.target);
+    
+    if (sourceChartSettings && targetChartSettings) {
+      // Configura a relação pai-filho entre os gráficos
+      sourceChartSettings.addChildChart(targetChartSettings);
+      
+      console.log('Connection established between:', 
+        sourceChartSettings.chartId, 'and', targetChartSettings.chartId);
+      
+      // Se o gráfico origem já tem uma seleção ativa, propaga para o destino
+      if (sourceChartSettings.sourceSelection) {
+        targetChartSettings.updateFromSourceSelection(sourceChartSettings.sourceSelection);
+      }
+    } else {
+      console.error('Could not find chart settings for nodes:', params);
+    }
+  }, [findChartSettingsByNodeId]);
+
   const onConnect = useCallback((params) => {
     // Find source and target nodes
     const sourceNode = nodes.find(node => node.id === params.source);

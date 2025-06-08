@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback, memo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, memo } from 'react';
 import { Group } from "@visx/group";
 import { scaleLinear, scaleOrdinal } from "@visx/scale";
 import { useTooltip, Tooltip, defaultStyles } from "@visx/tooltip";
@@ -72,37 +72,13 @@ const Legend = memo(({ groups, colorScale, margin, xSize }) => (
   </Group>
 ));
 
-// Memoized hull component
 const Hulls = memo(({ groups, chartData, colorScale, xScale, yScale }) => (
   <g className="hull-layer" style={{ pointerEvents: 'none' }}>
     {groups.map((element) => {
-      // Usar a função ensureArray para garantir que temos um array
-      const dataArray = ensureArray(chartData[element]);
-      
-      // Verificar se temos pontos suficientes para formar um hull (mínimo de 3)
-      if (dataArray.length < 3) {
-        return null;
-      }
-      
-      // Filtrar pontos para garantir que todos têm coordenadas válidas
-      const validPoints = dataArray.filter(d => 
-        d && 
-        d.x !== undefined && 
-        d.y !== undefined && 
-        !isNaN(d.x) && 
-        !isNaN(d.y)
-      );
-      
-      if (validPoints.length < 3) {
-        return null;
-      }
-
-      const pxPoints = validPoints.map((d) => [
+      const pxPoints = chartData[element]?.map((d) => [
         xScale(d.x),
         yScale(d.y),
-      ]);
-      
-      // O d3.polygonHull retorna null se não conseguir formar um hull
+      ]) || [];
       const hull = d3.polygonHull(pxPoints);
       return hull && (
         <Polygon
@@ -223,17 +199,10 @@ function DRScatterPlot({
 
   const [brushing, setBrushing] = React.useState(false);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [selectedPoints, setSelectedPoints] = React.useState(new Set());
+  const [brushBox, setBrushBox] = React.useState(null);
+  const [externalSelection, setExternalSelection] = React.useState(null);
   
-  // Inicialização segura de selectedPoints
-  const [selectedPoints, setSelectedPoints] = React.useState(
-    chartSettings?.interactiveFilters?.simulationList instanceof Set ? 
-      chartSettings.interactiveFilters.simulationList : 
-      new Set()
-  );
-  
-  const [brushBox, setBrushBox] = React.useState(
-    chartSettings?.interactiveFilters?.brushBox || null
-  );
 
   // Garantir que o gráfico se ajuste ao tamanho do contêiner
   useEffect(() => {
@@ -243,7 +212,7 @@ function DRScatterPlot({
     }
   }, [width, height]);
 
-  const handleMouseMove = useCallback((event, point, group) => {
+   const handleMouseMove = useCallback((event, point, group) => {
     if (isDragging || (brushBox && !isPointInBrush(point, brushBox))) {
       hideTooltip();
       return;
@@ -266,40 +235,76 @@ function DRScatterPlot({
     setTimeout(hideTooltip, TOOLTIP_HIDE_DELAY);
   }, [hideTooltip]);
 
+  // Listener para atualizações de seleção de outros gráficos
+  useEffect(() => {
+    const handleSelectionUpdate = (event) => {
+      if (event.detail.chartId === chartSettings.chartId) {
+        console.log('Received external selection for chart:', chartSettings.chartId, event.detail.selection);
+        setExternalSelection(event.detail.selection);
+      }
+    };
+
+    document.addEventListener('chartSelectionUpdate', handleSelectionUpdate);
+    
+    return () => {
+      document.removeEventListener('chartSelectionUpdate', handleSelectionUpdate);
+    };
+  }, [chartSettings.chartId]);
+
   const isPointInBrush = useCallback((point, brush) => {
     if (!brush) return false;
     const { x0, x1, y0, y1 } = brush;
     return point.x >= x0 && point.x <= x1 && point.y >= y0 && point.y <= y1;
   }, []);
+  
+  // Função para determinar se um ponto deve ser destacado
+  const isPointHighlighted = useCallback((point) => {
+    // Se há uma seleção externa, usa ela
+    if (externalSelection && externalSelection.size > 0) {
+      return externalSelection.has(point.name);
+    }
+    
+    // Se há uma seleção local (brush), usa ela
+    if (brushBox) {
+      return isPointInBrush(point, brushBox);
+    }
+    
+    // Se não há seleção, todos os pontos são destacados
+    return true;
+  }, [externalSelection, brushBox, isPointInBrush]);
 
   const onBrushUpdate = useCallback((bbox) => {
     if (!bbox || !chartSettings?.chartData) {
       setSelectedPoints(new Set());
       setBrushBox(null);
+      
+      // Limpa a seleção nos gráficos conectados
+      if (chartSettings) {
+        chartSettings.propagateSelection(new Set());
+      }
       return;
     }
 
     const selected = new Set();
     Object.entries(chartSettings.chartData).forEach(([ensemble, points]) => {
-      // Usar a função ensureArray para garantir que temos um array
-      const dataArray = ensureArray(points);
-      
-      dataArray.forEach(point => {
-        if (point && isPointInBrush(point, bbox)) {
-          selected.add(point.name);
-        }
-      });
+      if (Array.isArray(points)) {
+        points.forEach(point => {
+          if (isPointInBrush(point, bbox)) {
+            selected.add(point.name);
+          }
+        });
+      }
     });
-
-    // Verificar se interactiveFilters existe antes de atribuir
-    if (chartSettings?.interactiveFilters) {
-      chartSettings.interactiveFilters.simulationList = selected;
-      chartSettings.interactiveFilters.brushBox = bbox;
-    }
 
     setSelectedPoints(selected);
     setBrushBox(bbox);
-  }, [chartSettings?.chartData, isPointInBrush]);
+    
+    // Propaga a seleção para gráficos conectados
+    if (chartSettings) {
+      chartSettings.propagateSelection(selected);
+    }
+  }, [chartSettings?.chartData, isPointInBrush, chartSettings]);
+
 
   // Se não houver dados ou o componente for muito pequeno, não renderizar
   if (!chartSettings?.chartData || 
@@ -312,52 +317,59 @@ function DRScatterPlot({
     );
   }
 
-  return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-      <svg 
-        ref={svgRef}
-        width={width} 
-        height={height}
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      >
-        <rect x={0} y={0} width={width} height={height} fill="#ffffff" />
-        <Group top={margin.top} left={margin.left}>
-          <Brush
-            xScale={scales.xScale}
-            yScale={scales.yScale}
-            width={xSize}
-            height={ySize}
-            handleSize={8}
-            resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
-            brushDirection="both"
-            initialBrushPosition={{
-              start: { x: 0, y: 0 },
-              end: { x: 0, y: 0 },
-            }}
-            onBrushStart={() => {
-              setBrushing(true);
-              setIsDragging(true);
-              hideTooltip();
-            }}
-            onChange={brush => {
-              if (!brush) {
-                onBrushUpdate(null);
-                return;
-              }
-              setIsDragging(true);
-              onBrushUpdate(brush);
-            }}
-            onBrushEnd={() => {
-              setBrushing(false);
-              setIsDragging(false);
-            }}
-            onClick={() => {
-              setSelectedPoints(new Set());
-              setBrushBox(null);
-            }}
-          />
+  // Early return para casos inválidos
+  if (!chartSettings?.chartData || width < 10) {
+    return null;
+  }
 
-          {chartSettings?.drSettings?.showConvexHull && (
+  // Render principal
+  return (
+    <>
+      <div style={{ position: 'relative', width, height, overflow: 'hidden' }}>
+        <svg width={width} height={height}>
+          <rect x={0} y={0} width={width} height={height} fill="#ffffff" />
+          <Group top={margin.top} left={margin.left}>
+            <Brush
+              xScale={scales.xScale}
+              yScale={scales.yScale}
+              width={xSize}
+              height={ySize}
+              handleSize={8}
+              resizeTriggerAreas={['left', 'right', 'top', 'bottom', 'center']}
+              brushDirection="both"
+              initialBrushPosition={{
+                start: { x: 0, y: 0 },
+                end: { x: 0, y: 0 },
+              }}
+              onBrushStart={() => {
+                setBrushing(true);
+                setIsDragging(true);
+                hideTooltip();
+              }}
+              onChange={brush => {
+                if (!brush) {
+                  onBrushUpdate(null);
+                  return;
+                }
+                setIsDragging(true);
+                onBrushUpdate(brush);
+              }}
+              onBrushEnd={() => {
+                setBrushing(false);
+                setIsDragging(false);
+              }}
+              onClick={() => {
+                setSelectedPoints(new Set());
+                setBrushBox(null);
+                setExternalSelection(null);
+                
+                // Limpa seleção nos gráficos conectados
+                if (chartSettings) {
+                  chartSettings.propagateSelection(new Set());
+                }
+              }}
+            />
+
             <Hulls
               groups={groups}
               chartData={chartSettings.chartData}
@@ -365,65 +377,55 @@ function DRScatterPlot({
               xScale={scales.xScale}
               yScale={scales.yScale}
             />
-          )}
+            
+            <g className="points-layer" style={{ pointerEvents: 'none' }}>
+              {groups.map((element) =>
+                (chartSettings.chartData[element] || []).map((point, i) => {
+                  const isHighlighted = isPointHighlighted(point);
+                  return (
+                    <Circle
+                      key={`point-${element}-${i}`}
+                      className="dot"
+                      cx={scales.xScale(point.x)}
+                      cy={scales.yScale(point.y)}
+                      r={POINT_RADIUS}
+                      fill={scales.colorScale(element)}
+                      opacity={isHighlighted ? 1 : 0.3}
+                      stroke={externalSelection && externalSelection.has(point.name) ? '#000' : 'none'}
+                      strokeWidth={externalSelection && externalSelection.has(point.name) ? 2 : 0}
+                      onMouseMove={(event) => handleMouseMove(event, point, element)}
+                      onMouseLeave={handleMouseLeave}
+                      style={{ 
+                        cursor: isHighlighted ? 'pointer' : 'default',
+                        pointerEvents: isHighlighted ? 'all' : 'none'
+                      }}
+                    />
+                  );
+                })
+              )}
+            </g>
+          </Group>
           
-          <g className="points-layer">
-            {groups.map((element) => {
-              // Usar a função ensureArray para garantir que temos um array
-              const dataArray = ensureArray(chartSettings.chartData[element]);
-              
-              return dataArray.map((point, i) => {
-                // Ignorar pontos inválidos
-                if (!point || 
-                    point.x === undefined || 
-                    point.y === undefined || 
-                    isNaN(point.x) || 
-                    isNaN(point.y)) {
-                  return null;
-                }
-                
-                const isSelected = !brushBox || isPointInBrush(point, brushBox);
-                return (
-                  <Circle
-                    key={`point-${element}-${i}`}
-                    className="dot"
-                    cx={scales.xScale(point.x)}
-                    cy={scales.yScale(point.y)}
-                    r={POINT_RADIUS}
-                    fill={scales.colorScale(element)}
-                    opacity={isSelected ? 1 : 0.3}
-                    onMouseMove={(event) => handleMouseMove(event, point, element)}
-                    onMouseLeave={handleMouseLeave}
-                    style={{ 
-                      cursor: isSelected ? 'pointer' : 'default',
-                      pointerEvents: isSelected ? 'visible' : 'none'
-                    }}
-                  />
-                );
-              });
-            })}
-          </g>
-        </Group>
-        
-        <Legend
-          groups={groups}
-          colorScale={scales.colorScale}
-          margin={margin}
-          xSize={xSize}
-        />
-      </svg>
+          <Legend
+            groups={groups}
+            colorScale={scales.colorScale}
+            margin={margin}
+            xSize={xSize}
+          />
+        </svg>
 
-      {tooltipData && !isDragging && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-          <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
-            <div className="text-xs">
-              <div><strong>Ensemble: {tooltipData.ensemble}</strong></div>
-              {tooltipData.name && <div>Simulation: {tooltipData.name}</div>}
-            </div>
-          </Tooltip>
-        </div>
-      )}
-    </div>
+        {tooltipData && !isDragging && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+            <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
+              <div className="text-xs">
+                <div><strong>Ensemble: {tooltipData.ensemble}</strong></div>
+                {tooltipData.name && <div>Simulation: {tooltipData.name}</div>}
+              </div>
+            </Tooltip>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

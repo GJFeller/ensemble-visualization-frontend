@@ -1,4 +1,4 @@
-import React, { useState, memo, useMemo, useRef, useEffect } from 'react';
+import React, { useState, memo, useMemo, useEffect, useCallback } from 'react';
 import { Group } from '@visx/group';
 import { scaleLinear, scaleSymlog } from '@visx/scale';
 import { useTooltip, Tooltip, defaultStyles } from '@visx/tooltip';
@@ -9,15 +9,10 @@ import { Area } from '@visx/shape';
 import { Circle } from '@visx/shape';
 import { curveLinear } from '@visx/curve';
 import { voronoi } from '@visx/voronoi';
+import { AxisBottom, AxisLeft } from '@visx/axis';
 
-const defaultMargin = { top: 10, left: 10, right: 100, bottom: 30 };
+const defaultMargin = { top: 10, left: 60, right: 100, bottom: 50 };
 const legendMargin = { top: 10, left: 10, right: 10, bottom: 10 };
-
-// Updated color palette to match the main branch
-const COLORS = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"];
-
-// Função auxiliar para garantir que um valor seja um array
-const ensureArray = (value) => Array.isArray(value) ? value : [];
 
 function TemporalPlot({
   width,
@@ -26,8 +21,8 @@ function TemporalPlot({
   events = false,
   margin = defaultMargin,
 }) {
-  const svgRef = useRef(null);
-  
+  console.log('TemporalPlot rendered with:', { width, height, chartSettings, margin });
+
   // Chart sizes
   const xSize = width > margin.left + margin.right
     ? width - margin.left - margin.right
@@ -36,7 +31,10 @@ function TemporalPlot({
     ? height - margin.bottom - margin.top
     : height;
 
-  // Background color
+  console.log('Chart dimensions:', { xSize, ySize });
+
+  // Color palette
+  const colors = ["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854"];
   const background = "#ffffff";
 
   // Tooltip setup
@@ -45,45 +43,27 @@ function TemporalPlot({
     ...defaultStyles,
     backgroundColor: "rgba(0,0,0,0.9)",
     color: "white",
-    padding: "8px",
+    padding: "6px",
     borderRadius: "4px",
+    fontSize: "9px",
   };
   const { showTooltip, hideTooltip, tooltipData, tooltipLeft, tooltipTop } = useTooltip();
 
-  // State for hover point
+  // State for hover point and external selection
   const [hoverPoint, setHoverPoint] = useState(null);
-  
-  // Garantir que o gráfico se ajuste ao tamanho do contêiner
-  useEffect(() => {
-    if (svgRef.current && width > 0 && height > 0) {
-      svgRef.current.setAttribute('width', width);
-      svgRef.current.setAttribute('height', height);
-      
-      // Log para debug
-      console.log(`TemporalPlot - Dimensões atualizadas: ${width}x${height}`);
-    }
-  }, [width, height]);
+  const [externalSelection, setExternalSelection] = useState(null);
+  const [hoveredSeries, setHoveredSeries] = useState(null);
 
   // Process data and create scales
   const { xScale, yScale, groups, areaData, allPoints } = useMemo(() => {
-    // Verificações de segurança
     if (!chartSettings?.chartData) {
+      console.log('No chartData available');
       return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
     }
 
-    // Garantir que chartData é um objeto
-    if (typeof chartSettings.chartData !== 'object' || chartSettings.chartData === null) {
-      console.error("chartData não é um objeto válido:", chartSettings.chartData);
-      return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
-    }
+    console.log('TemporalPlot chartData:', chartSettings.chartData);
 
-    // Obter grupos e verificar se são válidos
     const groups = Object.keys(chartSettings.chartData);
-    if (groups.length === 0) {
-      console.warn("Nenhum grupo encontrado em chartData");
-      return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
-    }
-
     let xMin = Infinity, xMax = -Infinity;
     let yMin = Infinity, yMax = -Infinity;
     const areaData = {};
@@ -92,123 +72,100 @@ function TemporalPlot({
     // Process data to find bounds and create area data
     groups.forEach(group => {
       const timePoints = new Map();
+      const groupData = chartSettings.chartData[group];
       
-      // Verificar se chartSettings.chartData[group] é um objeto
-      if (!chartSettings.chartData[group] || typeof chartSettings.chartData[group] !== 'object') {
-        console.warn(`Grupo ${group} não contém dados válidos`);
-        return; // Skip this group
-      }
+      console.log(`Processing group ${group}:`, groupData);
+      
+      if (groupData && typeof groupData === 'object') {
+        Object.entries(groupData).forEach(([simulation, points]) => {
+          console.log(`Processing simulation ${simulation}:`, points);
+          
+          if (Array.isArray(points)) {
+            points.forEach(point => {
+              // Suporte para diferentes formatos de dados
+              let x, y;
+              if (Array.isArray(point)) {
+                [x, y] = point;
+              } else if (typeof point === 'object') {
+                x = point.x || point.time || point.year;
+                y = point.y || point.value;
+              }
+              
+              if (x !== undefined && y !== undefined) {
+                xMin = Math.min(xMin, x);
+                xMax = Math.max(xMax, x);
+                yMin = Math.min(yMin, y);
+                yMax = Math.max(yMax, y);
 
-      Object.entries(chartSettings.chartData[group]).forEach(([simulation, points]) => {
-        // Verificar se points é um array
-        if (!Array.isArray(points)) {
-          console.warn(`Pontos para ${group}.${simulation} não é um array:`, points);
-          return; // Skip this simulation
-        }
+                // Store point with metadata
+                allPoints.push({
+                  x,
+                  y,
+                  group,
+                  simulation,
+                  originalPoint: point
+                });
 
-        // Agora é seguro fazer forEach
-        points.forEach(point => {
-          // Verificar se point é um array ou objeto com propriedades
-          if (!Array.isArray(point) && typeof point !== 'object') {
-            console.warn(`Ponto inválido em ${group}.${simulation}:`, point);
-            return; // Skip this point
-          }
-
-          // Extrair coordenadas x e y do ponto
-          let x, y;
-          if (Array.isArray(point)) {
-            [x, y] = point;
-          } else {
-            x = point.x !== undefined ? point.x : point.time;
-            y = point.y !== undefined ? point.y : point.value;
-          }
-
-          // Verificar se x e y são números válidos
-          if (typeof x !== 'number' || typeof y !== 'number' || 
-              isNaN(x) || isNaN(y) || !isFinite(x) || !isFinite(y)) {
-            console.warn(`Coordenadas inválidas em ${group}.${simulation}:`, x, y);
-            return; // Skip this point
-          }
-
-          xMin = Math.min(xMin, x);
-          xMax = Math.max(xMax, x);
-          yMin = Math.min(yMin, y);
-          yMax = Math.max(yMax, y);
-
-          // Store point with metadata
-          allPoints.push({
-            x,
-            y,
-            group,
-            simulation,
-            originalPoint: point
-          });
-
-          if (!timePoints.has(x)) {
-            timePoints.set(x, { min: y, max: y });
-          } else {
-            const current = timePoints.get(x);
-            current.min = Math.min(current.min, y);
-            current.max = Math.max(current.max, y);
+                if (!timePoints.has(x)) {
+                  timePoints.set(x, { min: y, max: y });
+                } else {
+                  const current = timePoints.get(x);
+                  current.min = Math.min(current.min, y);
+                  current.max = Math.max(current.max, y);
+                }
+              }
+            });
           }
         });
-      });
-
-      // Criar dados de área apenas se houver pontos
-      if (timePoints.size > 0) {
-        areaData[group] = Array.from(timePoints.entries())
-          .sort(([a], [b]) => a - b)
-          .map(([x, { min, max }]) => ({
-            x,
-            yMin: min,
-            yMax: max
-          }));
-      } else {
-        areaData[group] = [];
       }
+
+      areaData[group] = Array.from(timePoints.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([x, { min, max }]) => ({
+          x,
+          yMin: min,
+          yMax: max
+        }));
     });
 
-    // Verificar se temos pontos após o processamento
-    if (allPoints.length === 0) {
-      console.warn("Nenhum ponto válido encontrado após processamento");
-      return { xScale: null, yScale: null, groups: [], areaData: {}, allPoints: [] };
-    }
+    console.log('Bounds:', { xMin, xMax, yMin, yMax });
+    console.log('AllPoints:', allPoints);
 
-    // Verificar os limites
-    if (!isFinite(xMin) || !isFinite(xMax) || !isFinite(yMin) || !isFinite(yMax)) {
-      console.error("Limites inválidos:", { xMin, xMax, yMin, yMax });
-      // Usar valores padrão para limites
-      xMin = 0;
-      xMax = 1;
-      yMin = 0;
-      yMax = 1;
+    // Se não encontrou dados válidos, retorna escalas padrão
+    if (xMin === Infinity || yMin === Infinity) {
+      console.log('No valid data found, using default scales');
+      return { 
+        xScale: scaleLinear({ domain: [0, 1], range: [0, xSize] }), 
+        yScale: scaleLinear({ domain: [0, 1], range: [ySize, 0] }), 
+        groups: [], 
+        areaData: {}, 
+        allPoints: [] 
+      };
     }
-
-    // Adicionar um pouco de espaço para melhor visualização
-    const xPadding = (xMax - xMin) * 0.05;
-    const yPadding = (yMax - yMin) * 0.05;
 
     const xScale = scaleLinear({
-      domain: [xMin - xPadding, xMax + xPadding],
+      domain: [xMin, xMax],
       range: [0, xSize],
     });
 
     const yScale = chartSettings.temporalSettings?.logScale
       ? scaleSymlog({
-          domain: [yMin - yPadding, yMax + yPadding],
+          domain: [yMin, yMax],
           range: [ySize, 0],
         })
       : scaleLinear({
-          domain: [yMin - yPadding, yMax + yPadding],
+          domain: [yMin, yMax],
           range: [ySize, 0],
         });
+
+    console.log('Created scales - xScale domain:', xScale.domain(), 'yScale domain:', yScale.domain());
 
     return { xScale, yScale, groups, areaData, allPoints };
   }, [chartSettings?.chartData, xSize, ySize, chartSettings?.temporalSettings?.logScale]);
 
-  // Create voronoi diagram
+  // Create voronoi diagram for precise hover detection
   const voronoiLayout = useMemo(() => {
-    if (!allPoints || !xScale || !yScale || allPoints.length === 0) return null;
+    if (!allPoints || !xScale || !yScale) return null;
 
     return voronoi({
       x: d => xScale(d.x),
@@ -218,13 +175,47 @@ function TemporalPlot({
     })(allPoints);
   }, [allPoints, xScale, yScale, xSize, ySize]);
 
+  // Listener para atualizações de seleção de outros gráficos
+  useEffect(() => {
+    const handleSelectionUpdate = (event) => {
+      if (event.detail.chartId === chartSettings.chartId) {
+        console.log('Received external selection for temporal chart:', chartSettings.chartId, event.detail.selection);
+        setExternalSelection(event.detail.selection);
+      }
+    };
+
+    document.addEventListener('chartSelectionUpdate', handleSelectionUpdate);
+    
+    return () => {
+      document.removeEventListener('chartSelectionUpdate', handleSelectionUpdate);
+    };
+  }, [chartSettings.chartId]);
+
+  // Função para determinar se uma série deve ser destacada
+  const isSeriesHighlighted = useCallback((seriesName) => {
+    if (externalSelection && externalSelection.size > 0) {
+      // Se há seleção externa, verifica se algum ponto da série está selecionado
+      return externalSelection.has(seriesName);
+    }
+    return true; // Se não há seleção externa, todas as séries são destacadas
+  }, [externalSelection]);
+
+  // Função para lidar com clique em séries para propagação
+  const handleSeriesClick = useCallback((seriesName, event) => {
+    event.stopPropagation();
+    // Ao clicar, propaga a seleção dessa série
+    const selection = new Set([seriesName]);
+    if (chartSettings && chartSettings.propagateSelection) {
+      chartSettings.propagateSelection(selection);
+    }
+  }, [chartSettings]);
+
+  // Mouse handlers
   const handleMouseMove = (event) => {
     if (tooltipTimeout) clearTimeout(tooltipTimeout);
     if (!voronoiLayout) return;
 
     const coords = localPoint(event);
-    if (!coords) return;
-    
     const x = coords.x - margin.left;
     const y = coords.y - margin.top;
     const closest = voronoiLayout.find(x, y, 100);
@@ -246,7 +237,7 @@ function TemporalPlot({
       setHoverPoint({
         x: xScale(pointX),
         y: yScale(pointY),
-        color: COLORS[groups.indexOf(group) % COLORS.length]
+        color: colors[groups.indexOf(group) % colors.length]
       });
     }
   };
@@ -258,94 +249,154 @@ function TemporalPlot({
     }, 300);
   };
 
-  // Renderizar mensagem se não houver dados
-  if (!chartSettings?.chartData || width < 10 || !xScale || !yScale || groups.length === 0) {
+  // Early return se não há dados válidos
+  if (!chartSettings?.chartData || width < 10 || !xScale || !yScale) {
+    console.log('Early return - missing data or invalid dimensions');
     return (
-      <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div>Não há dados disponíveis para visualização</div>
+      <div style={{ 
+        width, 
+        height, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        backgroundColor: '#f5f5f5',
+        border: '1px solid #ccc'
+      }}>
+        <Text textAnchor="middle" fontSize={14} fill="#666">
+          Sem dados para exibir
+        </Text>
       </div>
     );
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-      <svg 
-        ref={svgRef}
-        width={width} 
-        height={height}
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      >
+    <>
+      <svg width={width} height={height}>
         <rect x={0} y={0} width={width} height={height} fill={background} />
         <Group top={margin.top} left={margin.left}>
-          {/* Draw areas */}
+          {/* Grid lines (optional) */}
+          <g className="grid-lines" opacity={0.1}>
+            {/* Vertical grid lines */}
+            {xScale.ticks(Math.min(12, Math.floor(xSize / 50))).map((tick, i) => (
+              <line
+                key={`vgrid-${i}`}
+                x1={xScale(tick)}
+                y1={0}
+                x2={xScale(tick)}
+                y2={ySize}
+                stroke="#999"
+                strokeWidth={1}
+              />
+            ))}
+            {/* Horizontal grid lines */}
+            {yScale.ticks(Math.min(10, Math.floor(ySize / 30))).map((tick, i) => (
+              <line
+                key={`hgrid-${i}`}
+                x1={0}
+                y1={yScale(tick)}
+                x2={xSize}
+                y2={yScale(tick)}
+                stroke="#999"
+                strokeWidth={1}
+              />
+            ))}
+          </g>
+          {/* Draw areas if enabled */}
           {chartSettings.temporalSettings?.drawAreas && groups.map((group, groupIndex) => {
-            // Verificar se areaData[group] existe e tem elementos
-            if (!areaData[group] || areaData[group].length === 0) return null;
+            const isHighlighted = isSeriesHighlighted(group);
+            const areaPoints = areaData[group];
+            
+            console.log(`Rendering area for group ${group}:`, areaPoints);
+            
+            if (!areaPoints || areaPoints.length === 0) {
+              console.log(`No area data for group ${group}`);
+              return null;
+            }
             
             return (
               <Area
                 key={`area-${group}`}
-                data={areaData[group]}
+                data={areaPoints}
                 x={d => xScale(d.x)}
                 y0={d => yScale(d.yMin)}
                 y1={d => yScale(d.yMax)}
-                fill={COLORS[groupIndex % COLORS.length]}
-                opacity={0.2}
+                fill={colors[groupIndex % colors.length]}
+                opacity={isHighlighted ? 0.2 : 0.05}
                 curve={curveLinear}
               />
             );
           })}
 
-          {/* Draw lines */}
+          {/* Draw lines for each series */}
           {groups.map((group, groupIndex) => {
-            // Verificar se chartSettings.chartData[group] existe
-            if (!chartSettings.chartData[group]) return null;
+            const isHighlighted = isSeriesHighlighted(group);
+            const groupData = chartSettings.chartData[group];
             
-            return Object.entries(chartSettings.chartData[group]).map(([simulation, points]) => {
-              // Verificar se points é um array e tem elementos
-              if (!Array.isArray(points) || points.length === 0) return null;
+            console.log(`Rendering group ${group}:`, groupData);
+            
+            if (!groupData || typeof groupData !== 'object') {
+              console.log(`No valid data for group ${group}`);
+              return null;
+            }
+            
+            return Object.entries(groupData).map(([simulation, points]) => {
+              console.log(`Rendering line for ${group}-${simulation}:`, points);
               
-              const processedPoints = points.map(p => {
-                if (Array.isArray(p)) {
-                  return { x: p[0], y: p[1] };
-                } else if (typeof p === 'object') {
+              if (!Array.isArray(points) || points.length === 0) {
+                console.log(`No valid points for ${group}-${simulation}`);
+                return null;
+              }
+
+              // Converte pontos para formato padronizado
+              const lineData = points.map(point => {
+                if (Array.isArray(point)) {
+                  return { x: point[0], y: point[1] };
+                } else if (typeof point === 'object') {
                   return { 
-                    x: p.x !== undefined ? p.x : p.time, 
-                    y: p.y !== undefined ? p.y : p.value 
+                    x: point.x || point.time || point.year, 
+                    y: point.y || point.value 
                   };
                 }
                 return null;
-              }).filter(p => p !== null && 
-                            typeof p.x === 'number' && 
-                            typeof p.y === 'number' &&
-                            isFinite(p.x) && 
-                            isFinite(p.y));
-              
-              // Se não houver pontos processados válidos, não renderizar
-              if (processedPoints.length === 0) return null;
-              
+              }).filter(point => point && point.x !== undefined && point.y !== undefined);
+
+              console.log(`Line data for ${group}-${simulation}:`, lineData);
+
+              if (lineData.length === 0) {
+                console.log(`No valid line data for ${group}-${simulation}`);
+                return null;
+              }
+
               return (
                 <LinePath
                   key={`line-${group}-${simulation}`}
-                  data={processedPoints}
+                  data={lineData}
                   x={d => xScale(d.x)}
                   y={d => yScale(d.y)}
-                  stroke={COLORS[groupIndex % COLORS.length]}
-                  strokeWidth={1}
+                  stroke={colors[groupIndex % colors.length]}
+                  strokeWidth={isHighlighted ? 2 : 0.5}
+                  opacity={isHighlighted ? 1 : 0.3}
                   curve={curveLinear}
+                  onClick={(event) => handleSeriesClick(group, event)}
+                  onMouseEnter={() => setHoveredSeries(group)}
+                  onMouseLeave={() => setHoveredSeries(null)}
+                  style={{
+                    cursor: 'pointer',
+                    filter: hoveredSeries === group ? 'brightness(1.2)' : 'none'
+                  }}
                 />
               );
             });
           })}
 
-          {/* Mouse detection area */}
+          {/* Mouse detection area for tooltip */}
           <rect
             width={xSize}
             height={ySize}
             fill="transparent"
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'crosshair' }}
           />
 
           {/* Draw hover point */}
@@ -369,29 +420,149 @@ function TemporalPlot({
               />
             </>
           )}
+
+          {/* Draw highlighted points for selected series */}
+          {externalSelection && externalSelection.size > 0 &&
+            groups.map((group, groupIndex) => {
+              if (!isSeriesHighlighted(group)) return null;
+              
+              const groupData = chartSettings.chartData[group];
+              if (!groupData || typeof groupData !== 'object') return null;
+              
+              return Object.entries(groupData).map(([simulation, points]) => {
+                if (!Array.isArray(points)) return null;
+                
+                return points.map((point, pointIndex) => {
+                  let x, y;
+                  if (Array.isArray(point)) {
+                    [x, y] = point;
+                  } else if (typeof point === 'object') {
+                    x = point.x || point.time || point.year;
+                    y = point.y || point.value;
+                  }
+                  
+                  if (x === undefined || y === undefined) return null;
+                  
+                  return (
+                    <Circle
+                      key={`point-${group}-${simulation}-${pointIndex}`}
+                      cx={xScale(x)}
+                      cy={yScale(y)}
+                      r={3}
+                      fill={colors[groupIndex % colors.length]}
+                      stroke="#000"
+                      strokeWidth={1}
+                      opacity={0.8}
+                    />
+                  );
+                });
+              });
+            })
+          }
+
+          {/* X-axis with values */}
+          <AxisBottom
+            top={ySize}
+            scale={xScale}
+            numTicks={Math.min(12, Math.floor(xSize / 50))}
+            stroke="#333"
+            tickStroke="#333"
+            tickFormat={(value) => {
+              // Formato mais legível para anos/tempo
+              if (value >= 1000) {
+                return Math.round(value).toString();
+              } else {
+                return value.toFixed(1);
+              }
+            }}
+            tickLabelProps={() => ({
+              fill: '#333',
+              fontSize: 9,
+              textAnchor: 'middle',
+            })}
+          />
+
+          {/* Y-axis with values */}
+          <AxisLeft
+            scale={yScale}
+            numTicks={Math.min(10, Math.floor(ySize / 30))}
+            stroke="#333"
+            tickStroke="#333"
+            tickFormat={(value) => {
+              // Opção 1: Notação científica para valores grandes
+              if (Math.abs(value) >= 1000000) {
+                return value.toExponential(1);
+              } else if (Math.abs(value) >= 1000) {
+                return Math.round(value).toLocaleString();
+              } else {
+                return value.toFixed(2);
+              }
+            }}
+            tickLabelProps={() => ({
+              fill: '#333',
+              fontSize: 9,
+              textAnchor: 'end',
+              dx: '-0.25em',
+              dy: '0.25em',
+            })}
+          />
+
+          {/* Axis labels */}
+          <Text
+            x={xSize / 2}
+            y={ySize + 40}
+            textAnchor="middle"
+            fontSize={11}
+            fill="#333"
+            fontWeight="bold"
+          >
+            Tempo
+          </Text>
+          <Text
+            x={-ySize / 2}
+            y={-40}
+            textAnchor="middle"
+            fontSize={11}
+            fill="#333"
+            fontWeight="bold"
+            transform={`rotate(-90, ${-ySize / 2}, -40)`}
+          >
+            {chartSettings.temporalSettings?.temporalVariable || 'Valor'}
+          </Text>
         </Group>
 
         {/* Legend */}
         <Group top={legendMargin.top} left={margin.left + xSize + legendMargin.left}>
-          {groups.map((group, i) => (
-            <React.Fragment key={`legend-${group}`}>
-              <circle
-                cx={0}
-                cy={i * 25}
-                r={7}
-                fill={COLORS[i % COLORS.length]}
-              />
-              <Text
-                x={12}
-                y={i * 25}
-                dy=".5em"
-                textAnchor="start"
-                fontSize={12}
-              >
-                {group}
-              </Text>
-            </React.Fragment>
-          ))}
+          {groups.map((group, i) => {
+            const isHighlighted = isSeriesHighlighted(group);
+            return (
+              <React.Fragment key={`legend-${group}`}>
+                <circle
+                  cx={0}
+                  cy={i * 20}
+                  r={6}
+                  fill={colors[i % colors.length]}
+                  opacity={isHighlighted ? 1 : 0.5}
+                  stroke={isHighlighted && externalSelection ? '#000' : 'none'}
+                  strokeWidth={isHighlighted && externalSelection ? 2 : 0}
+                  style={{ cursor: 'pointer' }}
+                  onClick={(event) => handleSeriesClick(group, event)}
+                />
+                <Text
+                  x={12}
+                  y={i * 20}
+                  dy=".35em"
+                  textAnchor="start"
+                  fontSize={10}
+                  opacity={isHighlighted ? 1 : 0.5}
+                  style={{ cursor: 'pointer' }}
+                  onClick={(event) => handleSeriesClick(group, event)}
+                >
+                  {group}
+                </Text>
+              </React.Fragment>
+            );
+          })}
         </Group>
       </svg>
 
@@ -399,16 +570,21 @@ function TemporalPlot({
       {tooltipData && (
         <Tooltip top={tooltipTop} left={tooltipLeft} style={tooltipStyles}>
           <div>
-            <div>
-              <strong className="text-xs">{tooltipData.simulation}</strong>
+            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+              {tooltipData.group}
             </div>
-            <div className="text-xs">Year: {tooltipData.year}</div>
-            <div className="text-xs">Value: {tooltipData.value}</div>
+            <div style={{ fontSize: '9px' }}>Simulation: {tooltipData.simulation}</div>
+            <div style={{ fontSize: '9px' }}>
+              {typeof tooltipData.year === 'number' ? 
+                (tooltipData.year >= 1000 ? Math.round(tooltipData.year) : tooltipData.year.toFixed(1)) : 
+                tooltipData.year
+              }: {typeof tooltipData.value === 'number' ? tooltipData.value.toFixed(3) : tooltipData.value}
+            </div>
           </div>
         </Tooltip>
       )}
-    </div>
+    </>
   );
 }
 
-export default memo(TemporalPlot);
+export default memo(TemporalPlot)

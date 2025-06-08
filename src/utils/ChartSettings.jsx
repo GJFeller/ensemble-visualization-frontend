@@ -9,6 +9,7 @@ export class ChartSettings {
   #chartTitle = "Title";
   #chartId = "";
   #chartData = null;
+  #sourceSelection = null;
 
   #drSettings = {
     drMethod: ChartOptions.drMethodList[0],
@@ -153,6 +154,10 @@ export class ChartSettings {
     return this.#childrenChartSettings;
   }
 
+  get sourceSelection() {
+    return this.#sourceSelection;
+  }
+
   set chartTitle(chartTitle) {
     this.#chartTitle = chartTitle;
   }
@@ -193,6 +198,10 @@ export class ChartSettings {
     this.#childrenChartSettings = childrenChartSettings;
   }
 
+  set sourceSelection(selection) {
+    this.#sourceSelection = selection;
+  }
+
   static getSettings() {
     switch (this.chartType) {
       case ChartType.DR:
@@ -216,6 +225,79 @@ export class ChartSettings {
       let chartSettingsList = [this];
       return chartSettingsList.concat(childrenList);
     }
+  }
+
+  /**
+   * Atualiza este gráfico com base na seleção de um gráfico origem
+   * @param {Set|Array} selection - Conjunto de pontos selecionados
+   */
+  updateFromSourceSelection(selection) {
+    console.log('Updating chart', this.chartId, 'with selection:', selection);
+    
+    // Armazena a seleção recebida
+    this.#sourceSelection = selection;
+    
+    // Dispara um evento customizado para notificar o componente
+    const event = new CustomEvent('chartSelectionUpdate', {
+      detail: {
+        chartId: this.chartId,
+        selection: selection
+      }
+    });
+    
+    document.dispatchEvent(event);
+  }
+
+  /**
+   * Propaga a seleção para gráficos conectados (filhos)
+   * @param {Set|Array} selection - Seleção atual
+   */
+  propagateSelection(selection) {
+    this.#childrenChartSettings.forEach(childChart => {
+      if (childChart && typeof childChart.updateFromSourceSelection === 'function') {
+        childChart.updateFromSourceSelection(selection);
+      }
+    });
+  }
+
+  /**
+   * Adiciona um gráfico filho (conectado)
+   * @param {ChartSettings} childChart 
+   */
+  addChildChart(childChart) {
+    if (!this.#childrenChartSettings.includes(childChart)) {
+      this.#childrenChartSettings.push(childChart);
+      childChart.#parentChartSettings = this;
+    }
+  }
+
+  /**
+   * Remove um gráfico filho
+   * @param {ChartSettings} childChart 
+   */
+  removeChildChart(childChart) {
+    const index = this.#childrenChartSettings.indexOf(childChart);
+    if (index > -1) {
+      this.#childrenChartSettings.splice(index, 1);
+      childChart.#parentChartSettings = null;
+    }
+  }
+
+  /**
+   * Limpa todas as seleções
+   */
+  clearSelection() {
+    this.#sourceSelection = null;
+    
+    // Notifica o componente
+    const event = new CustomEvent('chartSelectionUpdate', {
+      detail: {
+        chartId: this.chartId,
+        selection: null
+      }
+    });
+    
+    document.dispatchEvent(event);
   }
 
   clone = function () {
